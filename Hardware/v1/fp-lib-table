@@ -1,0 +1,4 @@
+(fp_lib_table
+  (lib (name digikey-footprints)(type KiCad)(uri /home/chicoliebl/.kicad_digikey_lib/digikey-kicad-library/digikey-footprints.pretty)(options "")(descr ""))
+  (lib (name comp-lib)(type KiCad)(uri /home/chicoliebl/UFPR/TCC/Circuitos/comp-lib)(options "")(descr ""))
+)

@@ -1,0 +1,3 @@
+(sym_lib_table
+  (lib (name dk_Transistors-Bipolar-BJT-Single)(type Legacy)(uri /home/chicoliebl/.kicad_digikey_lib/digikey-kicad-library/digikey-symbols/dk_Transistors-Bipolar-BJT-Single.lib)(options "")(descr ""))
+)
