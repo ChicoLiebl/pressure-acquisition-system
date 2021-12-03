@@ -3,7 +3,7 @@ EELAYER 30 0
 EELAYER END
 $Descr A3 16535 11693
 encoding utf-8
-Sheet 2 2
+Sheet 1 1
 Title "Placa de Digitalização e Comunicação"
 Date ""
 Rev "00"
@@ -23,17 +23,6 @@ F 2 "Converter_ACDC:Converter_ACDC_HiLink_HLK-PMxx" H 10700 1500 50  0001 C CNN
 F 3 "http://www.hlktech.net/product_detail.php?ProId=54" H 11100 1450 50  0001 C CNN
 	1    10700 1800
 	-1   0    0    -1  
-$EndComp
-$Comp
-L Connector_Generic:Conn_01x02 J1
-U 1 1 611ACA58
-P 14200 1750
-F 0 "J1" H 14280 1742 50  0000 L CNN
-F 1 "127V AC" H 14280 1651 50  0000 L CNN
-F 2 "Connector_Phoenix_MC_HighVoltage:PhoenixContact_MCV_1,5_2-G-5.08_1x02_P5.08mm_Vertical" H 14200 1750 50  0001 C CNN
-F 3 "~" H 14200 1750 50  0001 C CNN
-	1    14200 1750
-	1    0    0    -1  
 $EndComp
 $Comp
 L Device:L_Core_Ferrite_Coupled_1243 L1
@@ -99,12 +88,8 @@ Connection ~ 12350 1950
 Wire Wire Line
 	12850 1950 14000 1950
 Wire Wire Line
-	14000 1950 14000 1850
+	14000 1950 14000 1800
 Connection ~ 12850 1950
-Wire Wire Line
-	14000 1750 14000 1650
-Wire Wire Line
-	14000 1650 13600 1650
 Wire Wire Line
 	11500 1700 11100 1700
 Wire Wire Line
@@ -437,16 +422,14 @@ $EndComp
 $Comp
 L power:+5VA #PWR0115
 U 1 1 610E8345
-P 3400 3100
-F 0 "#PWR0115" H 3400 2950 50  0001 C CNN
-F 1 "+5VA" H 3415 3273 50  0000 C CNN
-F 2 "" H 3400 3100 50  0001 C CNN
-F 3 "" H 3400 3100 50  0001 C CNN
-	1    3400 3100
+P 3550 3100
+F 0 "#PWR0115" H 3550 2950 50  0001 C CNN
+F 1 "+5VA" H 3565 3273 50  0000 C CNN
+F 2 "" H 3550 3100 50  0001 C CNN
+F 3 "" H 3550 3100 50  0001 C CNN
+	1    3550 3100
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	3550 3100 3400 3100
 $Comp
 L Device:C C6
 U 1 1 610FAB7A
@@ -520,11 +503,6 @@ F 3 "" H 2450 3200 50  0001 C CNN
 	1    2450 3200
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	2450 3200 2450 3100
-Wire Wire Line
-	2450 3100 2950 3100
-Connection ~ 2450 3100
 Wire Wire Line
 	2950 2800 2450 2800
 Connection ~ 7850 2950
@@ -635,7 +613,7 @@ Wire Wire Line
 Wire Wire Line
 	3850 2800 3850 3250
 Wire Wire Line
-	3550 3250 3550 3100
+	3550 3250 3550 3200
 Wire Wire Line
 	3650 4450 3650 4250
 Wire Wire Line
@@ -718,17 +696,6 @@ Wire Wire Line
 	5050 3450 5050 4150
 Wire Wire Line
 	5050 4150 6500 4150
-$Comp
-L Analog_ADC:ADS8689RUM U2
-U 1 1 6118CE58
-P 3650 3750
-F 0 "U2" H 2906 3796 50  0000 R CNN
-F 1 "ADS8689RUM" H 2906 3705 50  0000 R CNN
-F 2 "Package_DFN_QFN:QFN-16-1EP_4x4mm_P0.65mm_EP2.7x2.7mm" H 3650 2850 50  0001 C CNN
-F 3 "http://www.ti.com/lit/ds/symlink/ads8681.pdf" H 3700 4000 50  0001 C CNN
-	1    3650 3750
-	1    0    0    -1  
-$EndComp
 $Comp
 L ESP32-WROVER-I:ESP32-WROVER-I A1
 U 1 1 6118DCF1
@@ -1398,6 +1365,7 @@ U 1 1 614B6BFA
 P 3600 10700
 AR Path="/61191980/614B6BFA" Ref="U?"  Part="1" 
 AR Path="/61179E8F/614B6BFA" Ref="U5"  Part="1" 
+AR Path="/614B6BFA" Ref="U5"  Part="1" 
 F 0 "U5" H 3600 9685 50  0000 C CNN
 F 1 "TMUX1102D" H 3600 9776 50  0000 C CNN
 F 2 "Package_TO_SOT_SMD:SOT-23-5_HandSoldering" H 3600 9750 50  0001 C CNN
@@ -1415,6 +1383,7 @@ U 1 1 614B6C0E
 P 5850 6600
 AR Path="/61191980/614B6C0E" Ref="C?"  Part="1" 
 AR Path="/61179E8F/614B6C0E" Ref="C25"  Part="1" 
+AR Path="/614B6C0E" Ref="C25"  Part="1" 
 F 0 "C25" H 5965 6646 50  0000 L CNN
 F 1 "100nF" H 5965 6555 50  0000 L CNN
 F 2 "digikey-footprints:0603" H 5888 6450 50  0001 C CNN
@@ -1438,6 +1407,7 @@ U 1 1 614B6C1A
 P 5400 6600
 AR Path="/61191980/614B6C1A" Ref="C?"  Part="1" 
 AR Path="/61179E8F/614B6C1A" Ref="C24"  Part="1" 
+AR Path="/614B6C1A" Ref="C24"  Part="1" 
 F 0 "C24" H 5515 6646 50  0000 L CNN
 F 1 "1uF" H 5515 6555 50  0000 L CNN
 F 2 "digikey-footprints:0805" H 5438 6450 50  0001 C CNN
@@ -1482,10 +1452,10 @@ Connection ~ 2950 7800
 Wire Wire Line
 	2600 7800 2950 7800
 $Comp
-L Device:C Cf?
+L Device:C Cf1
 U 1 1 614B6C4B
 P 3600 8950
-AR Path="/614B6C4B" Ref="Cf?"  Part="1" 
+AR Path="/614B6C4B" Ref="Cf1"  Part="1" 
 AR Path="/61191980/614B6C4B" Ref="Cf?"  Part="1" 
 AR Path="/61179E8F/614B6C4B" Ref="Cf1"  Part="1" 
 F 0 "Cf1" V 3348 8950 50  0000 C CNN
@@ -1496,10 +1466,10 @@ F 3 "~" H 3600 8950 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L Device:R Rf?
+L Device:R Rf1
 U 1 1 614B6C51
 P 3600 9400
-AR Path="/614B6C51" Ref="Rf?"  Part="1" 
+AR Path="/614B6C51" Ref="Rf1"  Part="1" 
 AR Path="/61191980/614B6C51" Ref="Rf?"  Part="1" 
 AR Path="/61179E8F/614B6C51" Ref="Rf1"  Part="1" 
 F 0 "Rf1" V 3393 9400 50  0000 C CNN
@@ -1536,44 +1506,44 @@ Wire Wire Line
 Text GLabel 2850 7700 0    50   Input ~ 0
 2.5V
 Wire Wire Line
-	5050 10000 5050 9850
+	1850 9450 1850 9300
 Wire Wire Line
-	4800 10000 5050 10000
-Text GLabel 4800 10000 0    50   Input ~ 0
+	1600 9450 1850 9450
+Text GLabel 1600 9450 0    50   Input ~ 0
 2.5V
 Wire Wire Line
-	5050 9550 5050 9450
-Connection ~ 5050 10000
+	1850 9000 1850 8900
+Connection ~ 1850 9450
 Wire Wire Line
-	5050 10100 5050 10000
+	1850 9550 1850 9450
 Wire Wire Line
-	5050 10500 5050 10400
+	1850 9950 1850 9850
 $Comp
-L Device:R R?
+L Device:R R13
 U 1 1 614B6C78
-P 5050 10250
-AR Path="/614B6C78" Ref="R?"  Part="1" 
+P 1850 9700
+AR Path="/614B6C78" Ref="R13"  Part="1" 
 AR Path="/61191980/614B6C78" Ref="R?"  Part="1" 
 AR Path="/61179E8F/614B6C78" Ref="R13"  Part="1" 
-F 0 "R13" H 5120 10296 50  0000 L CNN
-F 1 "R" H 5120 10205 50  0000 L CNN
-F 2 "digikey-footprints:0603" V 4980 10250 50  0001 C CNN
-F 3 "~" H 5050 10250 50  0001 C CNN
-	1    5050 10250
+F 0 "R13" H 1920 9746 50  0000 L CNN
+F 1 "R" H 1920 9655 50  0000 L CNN
+F 2 "digikey-footprints:0603" V 1780 9700 50  0001 C CNN
+F 3 "~" H 1850 9700 50  0001 C CNN
+	1    1850 9700
 	1    0    0    -1  
 $EndComp
 $Comp
-L Device:R R?
+L Device:R R12
 U 1 1 614B6C7E
-P 5050 9700
-AR Path="/614B6C7E" Ref="R?"  Part="1" 
+P 1850 9150
+AR Path="/614B6C7E" Ref="R12"  Part="1" 
 AR Path="/61191980/614B6C7E" Ref="R?"  Part="1" 
 AR Path="/61179E8F/614B6C7E" Ref="R12"  Part="1" 
-F 0 "R12" H 5120 9746 50  0000 L CNN
-F 1 "R" H 5120 9655 50  0000 L CNN
-F 2 "digikey-footprints:0603" V 4980 9700 50  0001 C CNN
-F 3 "~" H 5050 9700 50  0001 C CNN
-	1    5050 9700
+F 0 "R12" H 1920 9196 50  0000 L CNN
+F 1 "R" H 1920 9105 50  0000 L CNN
+F 2 "digikey-footprints:0603" V 1780 9150 50  0001 C CNN
+F 3 "~" H 1850 9150 50  0001 C CNN
+	1    1850 9150
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
@@ -1599,10 +1569,10 @@ Wire Wire Line
 Wire Wire Line
 	4100 8000 4000 8000
 $Comp
-L Connector:Conn_Coaxial J?
+L Connector:Conn_Coaxial J2
 U 1 1 614B6C9C
 P 1450 7400
-AR Path="/614B6C9C" Ref="J?"  Part="1" 
+AR Path="/614B6C9C" Ref="J2"  Part="1" 
 AR Path="/61191980/614B6C9C" Ref="J?"  Part="1" 
 AR Path="/61179E8F/614B6C9C" Ref="J2"  Part="1" 
 F 0 "J2" H 1550 7375 50  0000 L CNN
@@ -1613,10 +1583,10 @@ F 3 " ~" H 1450 7400 50  0001 C CNN
 	-1   0    0    -1  
 $EndComp
 $Comp
-L Device:R Rb?
+L Device:R Rb1
 U 1 1 614B6CA2
 P 2900 6300
-AR Path="/614B6CA2" Ref="Rb?"  Part="1" 
+AR Path="/614B6CA2" Ref="Rb1"  Part="1" 
 AR Path="/61191980/614B6CA2" Ref="Rb?"  Part="1" 
 AR Path="/61179E8F/614B6CA2" Ref="Rb1"  Part="1" 
 F 0 "Rb1" V 2693 6300 50  0000 C CNN
@@ -1627,10 +1597,10 @@ F 3 "~" H 2900 6300 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L Device:R Rb?
+L Device:R Rb2
 U 1 1 614B6CA8
 P 2650 8500
-AR Path="/614B6CA8" Ref="Rb?"  Part="1" 
+AR Path="/614B6CA8" Ref="Rb2"  Part="1" 
 AR Path="/61191980/614B6CA8" Ref="Rb?"  Part="1" 
 AR Path="/61179E8F/614B6CA8" Ref="Rb2"  Part="1" 
 F 0 "Rb2" V 2443 8500 50  0000 C CNN
@@ -1641,10 +1611,10 @@ F 3 "~" H 2650 8500 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L Device:R Ra?
+L Device:R Ra1
 U 1 1 614B6CAE
 P 2350 6300
-AR Path="/614B6CAE" Ref="Ra?"  Part="1" 
+AR Path="/614B6CAE" Ref="Ra1"  Part="1" 
 AR Path="/61191980/614B6CAE" Ref="Ra?"  Part="1" 
 AR Path="/61179E8F/614B6CAE" Ref="Ra1"  Part="1" 
 F 0 "Ra1" V 2143 6300 50  0000 C CNN
@@ -1655,10 +1625,10 @@ F 3 "~" H 2350 6300 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L Device:R Ra?
+L Device:R Ra2
 U 1 1 614B6CB4
 P 2250 8500
-AR Path="/614B6CB4" Ref="Ra?"  Part="1" 
+AR Path="/614B6CB4" Ref="Ra2"  Part="1" 
 AR Path="/61191980/614B6CB4" Ref="Ra?"  Part="1" 
 AR Path="/61179E8F/614B6CB4" Ref="Ra2"  Part="1" 
 F 0 "Ra2" V 2043 8500 50  0000 C CNN
@@ -1669,10 +1639,10 @@ F 3 "~" H 2250 8500 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L AD8606ACBZ-REEL7:AD8606ACBZ-REEL7 U?
+L AD8606ACBZ-REEL7:AD8606ACBZ-REEL7 U4
 U 1 1 614B6CBD
 P 3500 7600
-AR Path="/614B6CBD" Ref="U?"  Part="1" 
+AR Path="/614B6CBD" Ref="U4"  Part="1" 
 AR Path="/61191980/614B6CBD" Ref="U?"  Part="1" 
 AR Path="/61179E8F/614B6CBD" Ref="U4"  Part="1" 
 F 0 "U4" H 3500 8267 50  0000 C CNN
@@ -1734,12 +1704,12 @@ $EndComp
 $Comp
 L power:GNDA #PWR0135
 U 1 1 616423FC
-P 5050 10500
-F 0 "#PWR0135" H 5050 10250 50  0001 C CNN
-F 1 "GNDA" H 5055 10327 50  0000 C CNN
-F 2 "" H 5050 10500 50  0001 C CNN
-F 3 "" H 5050 10500 50  0001 C CNN
-	1    5050 10500
+P 1850 9950
+F 0 "#PWR0135" H 1850 9700 50  0001 C CNN
+F 1 "GNDA" H 1855 9777 50  0000 C CNN
+F 2 "" H 1850 9950 50  0001 C CNN
+F 3 "" H 1850 9950 50  0001 C CNN
+	1    1850 9950
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
@@ -1859,9 +1829,9 @@ Wire Wire Line
 	8400 4550 7700 4550
 Wire Wire Line
 	8400 4550 8400 4850
-Text Label 7700 4450 0    50   ~ 0
+Text Label 6500 4550 2    50   ~ 0
 LED_G
-Text Label 7700 4350 0    50   ~ 0
+Text Label 6500 4650 2    50   ~ 0
 LED_B
 Text Label 7700 4650 0    50   ~ 0
 LED_R
@@ -1877,14 +1847,222 @@ F 3 "" H 4950 6900 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L power:+5VA #PWR?
+L power:+5VA #PWR0130
 U 1 1 61568719
-P 5050 9450
-F 0 "#PWR?" H 5050 9300 50  0001 C CNN
-F 1 "+5VA" H 5065 9623 50  0000 C CNN
-F 2 "" H 5050 9450 50  0001 C CNN
-F 3 "" H 5050 9450 50  0001 C CNN
-	1    5050 9450
+P 1850 8900
+F 0 "#PWR0130" H 1850 8750 50  0001 C CNN
+F 1 "+5VA" H 1865 9073 50  0000 C CNN
+F 2 "" H 1850 8900 50  0001 C CNN
+F 3 "" H 1850 8900 50  0001 C CNN
+	1    1850 8900
 	1    0    0    -1  
 $EndComp
+$Comp
+L Connector_Generic:Conn_01x10 J5
+U 1 1 6172DE11
+P 8900 6200
+F 0 "J5" H 8980 6192 50  0000 L CNN
+F 1 "Conn_01x10" H 8980 6101 50  0000 L CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x10_P2.54mm_Vertical" H 8900 6200 50  0001 C CNN
+F 3 "~" H 8900 6200 50  0001 C CNN
+	1    8900 6200
+	1    0    0    -1  
+$EndComp
+Text Label 6500 3150 2    50   ~ 0
+VN
+Text Label 6500 3250 2    50   ~ 0
+VP
+Text Label 6500 3650 2    50   ~ 0
+IO02
+Text Label 6500 3750 2    50   ~ 0
+IO04
+Text Label 6500 4850 2    50   ~ 0
+IO25
+Text Label 7700 4450 0    50   ~ 0
+IO34
+Text Label 7700 4350 0    50   ~ 0
+IO35
+$Comp
+L power:GNDREF #PWR0137
+U 1 1 61769C53
+P 8600 6850
+F 0 "#PWR0137" H 8600 6600 50  0001 C CNN
+F 1 "GNDREF" H 8605 6677 50  0000 C CNN
+F 2 "" H 8600 6850 50  0001 C CNN
+F 3 "" H 8600 6850 50  0001 C CNN
+	1    8600 6850
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+3.3V #PWR0138
+U 1 1 6176D726
+P 8450 5850
+F 0 "#PWR0138" H 8450 5700 50  0001 C CNN
+F 1 "+3.3V" H 8465 6023 50  0000 C CNN
+F 2 "" H 8450 5850 50  0001 C CNN
+F 3 "" H 8450 5850 50  0001 C CNN
+	1    8450 5850
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+5V #PWR0141
+U 1 1 61771080
+P 8700 5700
+F 0 "#PWR0141" H 8700 5550 50  0001 C CNN
+F 1 "+5V" H 8715 5873 50  0000 C CNN
+F 2 "" H 8700 5700 50  0001 C CNN
+F 3 "" H 8700 5700 50  0001 C CNN
+	1    8700 5700
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	8700 5800 8700 5700
+Wire Wire Line
+	8700 5900 8450 5900
+Wire Wire Line
+	8450 5900 8450 5850
+Wire Wire Line
+	8600 6850 8600 6700
+Wire Wire Line
+	8600 6700 8700 6700
+Text Label 8700 6100 2    50   ~ 0
+IO02
+Text Label 8700 6000 2    50   ~ 0
+IO04
+Text Label 8700 6200 2    50   ~ 0
+IO25
+Text Label 8700 6300 2    50   ~ 0
+IO35
+Text Label 8700 6400 2    50   ~ 0
+IO34
+Text Label 8700 6500 2    50   ~ 0
+VN
+Text Label 8700 6600 2    50   ~ 0
+VP
+$Comp
+L ADS8689IPW:ADS8689IPW U2
+U 1 1 617EB7AE
+P 3650 3750
+F 0 "U2" H 2906 3796 50  0000 R CNN
+F 1 "ADS8689IPW" H 2906 3705 50  0000 R CNN
+F 2 "Package_SO:TSSOP-16_4.4x5mm_P0.65mm" H 3650 2850 50  0001 C CNN
+F 3 "http://www.ti.com/lit/ds/symlink/ads8681.pdf" H 3700 4000 50  0001 C CNN
+	1    3650 3750
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:C C23
+U 1 1 6185B717
+P 3200 3200
+F 0 "C23" H 3315 3246 50  0000 L CNN
+F 1 "100nF" H 3315 3155 50  0000 L CNN
+F 2 "digikey-footprints:0603" H 3238 3050 50  0001 C CNN
+F 3 "~" H 3200 3200 50  0001 C CNN
+	1    3200 3200
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	3350 3200 3550 3200
+Connection ~ 3550 3200
+Wire Wire Line
+	3550 3200 3550 3100
+Wire Wire Line
+	2450 3100 2450 3200
+Connection ~ 2450 3200
+Wire Wire Line
+	2950 3100 2950 3200
+Wire Wire Line
+	2950 3200 2450 3200
+$Comp
+L power:GNDA #PWR0142
+U 1 1 6193BC19
+P 3000 3250
+F 0 "#PWR0142" H 3000 3000 50  0001 C CNN
+F 1 "GNDA" H 3005 3077 50  0000 C CNN
+F 2 "" H 3000 3250 50  0001 C CNN
+F 3 "" H 3000 3250 50  0001 C CNN
+	1    3000 3250
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3000 3250 3000 3200
+Wire Wire Line
+	3000 3200 3050 3200
+$Comp
+L Connector_Generic:Conn_01x03 J1
+U 1 1 619E9BA6
+P 15100 1800
+F 0 "J1" H 15180 1842 50  0000 L CNN
+F 1 "Conn_01x03" H 15180 1751 50  0000 L CNN
+F 2 "comp-lib:AC-Input" H 15100 1800 50  0001 C CNN
+F 3 "~" H 15100 1800 50  0001 C CNN
+	1    15100 1800
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	14900 1650 14900 1700
+Wire Wire Line
+	14000 1800 14900 1800
+Wire Wire Line
+	13600 1650 14900 1650
+$Comp
+L power:Earth #PWR0143
+U 1 1 61A38F04
+P 14800 2050
+F 0 "#PWR0143" H 14800 1800 50  0001 C CNN
+F 1 "Earth" H 14800 1900 50  0001 C CNN
+F 2 "" H 14800 2050 50  0001 C CNN
+F 3 "~" H 14800 2050 50  0001 C CNN
+	1    14800 2050
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	14800 2050 14800 1900
+Wire Wire Line
+	14800 1900 14900 1900
+$Comp
+L Mechanical:MountingHole_Pad H1
+U 1 1 61A53D17
+P 14400 2300
+F 0 "H1" V 14637 2303 50  0000 C CNN
+F 1 "MountingHole_Pad" V 14546 2303 50  0000 C CNN
+F 2 "MountingHole:MountingHole_2.2mm_M2_DIN965_Pad" H 14400 2300 50  0001 C CNN
+F 3 "~" H 14400 2300 50  0001 C CNN
+	1    14400 2300
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	14500 2300 14600 2300
+Wire Wire Line
+	14600 2300 14600 1900
+Wire Wire Line
+	14600 1900 14800 1900
+Connection ~ 14800 1900
+$Comp
+L Device:C C27
+U 1 1 61A6D26D
+P 14750 2300
+F 0 "C27" H 14786 2424 50  0000 L CNN
+F 1 "100nF" H 14787 2215 50  0000 L CNN
+F 2 "digikey-footprints:0603" H 14788 2150 50  0001 C CNN
+F 3 "~" H 14750 2300 50  0001 C CNN
+	1    14750 2300
+	0    1    1    0   
+$EndComp
+Connection ~ 14600 2300
+$Comp
+L power:GNDREF #PWR0144
+U 1 1 61A6DF8D
+P 15050 2350
+F 0 "#PWR0144" H 15050 2100 50  0001 C CNN
+F 1 "GNDREF" H 15055 2177 50  0000 C CNN
+F 2 "" H 15050 2350 50  0001 C CNN
+F 3 "" H 15050 2350 50  0001 C CNN
+	1    15050 2350
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	15050 2350 15050 2300
+Wire Wire Line
+	15050 2300 14900 2300
 $EndSCHEMATC
