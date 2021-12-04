@@ -1,0 +1,41 @@
+{
+  "C_Cpp.clang_format_style": "{ BasedOnStyle: Google, IndentWidth: 2, ColumnLimit: 0}",
+  "editor.formatOnSave": false,
+  "[cpp]": {
+    "editor.quickSuggestions": true
+  },
+  "[c]": {
+    "editor.quickSuggestions": true
+  },
+  "C_Cpp.intelliSenseEngineFallback": "Enabled",
+  "plantuml.server": "http://localhost:8080",
+  "plantuml.diagramsRoot": "docs/diagrams",
+  "plantuml.exportOutDir": "docs/diagrams/render",
+  "plantuml.exportFormat": "png",
+  "plantuml.exportSubFolder": false,
+  "files.associations": {
+    "array": "cpp",
+    "string_view": "cpp",
+    "wifi.h": "c",
+    "network_wifi.h": "c"
+  },
+  "python.pythonPath": "/usr/bin/python",
+  "cmake.configureOnOpen": false,
+  "C_Cpp.dimInactiveRegions": false,
+  "C_Cpp.clang_format_fallbackStyle": "{ BasedOnStyle: Google, IndentWidth: 2, ColumnLimit: 0}",
+  "files.exclude": {
+    "**/esp32s2/**": true,
+    "**/stubs/**": true
+  },
+  "search.exclude": {
+    "**/esp32s2/**": true,
+    "**/stubs/**": true,
+    "main/playground": true
+  },
+  "C_Cpp.exclusionPolicy": "checkFilesAndFolders",
+  "C_Cpp.files.exclude": {
+    "**/esp32s2/**": true,
+    "**/stubs/**": true,
+    "**/.vscode": true
+  }
+}

@@ -1,0 +1,32 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "compilerPath": "${env:IDF_GCC}/bin/xtensa-esp32-elf-g++",
+            "includePath": [
+                "${env:IDF_PATH}/components/lwip/port/esp32/include/",
+                "${env:IDF_PATH}/components/**",
+                "${env:IDF_GCC}/**",
+                "${workspaceFolder}/build/config",
+                "${workspaceFolder}/**"
+            ],
+            "browse": {
+                "path": [
+                    "${env:IDF_PATH}/components",
+                    "${env:IDF_GCC}",
+                    "${workspaceFolder}"
+                ],
+                "limitSymbolsToIncludedHeaders": false
+            },
+            "defines": [
+                "MINMEA_INCLUDE_COMPAT",
+                "CONFIG_MBEDTLS_TLS_ENABLED=1",
+                "SNTP_SERVER_DNS=1",
+                "_DEFAULT_SOURCE"
+            ]
+        }
+    ],
+    "version": 4
+}
