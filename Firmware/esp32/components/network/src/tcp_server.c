@@ -108,10 +108,16 @@ static void tcp_server_task () {
     client_connected = true;
 
     /* Send loop */
+    int64_t start_time, send_time;
     broadcast_message_t msg;
     while (1) {
       if (xQueueReceive(tcp_server_queue, &msg, (TickType_t) 10)) {
+        start_time = esp_timer_get_time();
         int written = send(sock, msg.data, msg.len, 0);
+        send_time = esp_timer_get_time() - start_time;
+        ESP_LOGW(TAG, "Sent %d bytes in %lld us, %.2f kB/s", 
+          msg.len, send_time, (float) (msg.len * 1000) / (float) send_time
+        );
         free(msg.data);
         if (written < 0) {
           ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
@@ -137,7 +143,7 @@ void send_tcp_packet (uint8_t *data, size_t len) {
   /* Deep copy the message */
   msg.data = (uint8_t*) malloc(len);
   msg.len = len;
-  memcpy(data, msg.data, len);
+  memcpy(msg.data, data, len);
 
   xQueueSend(tcp_server_queue, &msg, (TickType_t) 100);
 }
