@@ -11,6 +11,6 @@ typedef struct broadcast_message_t {
 
 void tcp_server_init ();
 
-esp_err_t send_tcp_packet (uint8_t *data, size_t len);
+void send_tcp_packet (uint8_t *data, size_t len);
 
 #endif

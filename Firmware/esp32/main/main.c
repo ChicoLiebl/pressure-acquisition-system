@@ -9,8 +9,14 @@
 
 #include "network_wifi.h"
 
-const char ssid[] = "CLARO_2GDFA429";
-const char passwd[] = "B8DFA429";
+// #include "broadcast.h"
+#include "tcp_server.h"
+
+// const char ssid[] = "CLARO_2GDFA429";
+// const char passwd[] = "B8DFA429";
+
+const char ssid[] = "tracktum-setup";
+const char passwd[] = "tracktum-1234";
 
 static bool wifi_connected = false;
 
@@ -46,4 +52,19 @@ void app_main(void) {
   wifi_init(&wifi_callbacks);
   wifi_start_and_scan();
   wifi_connect(ssid, passwd);
+
+  while (wifi_connected == false) vTaskDelay(pdMS_TO_TICKS(100));
+  tcp_server_init();
+
+  char test_data[1024];
+
+  for (int i = 0; i < 1024; i++) {
+    test_data[i] = i % 255;
+  }
+
+  while (1) {
+    send_tcp_packet((uint8_t*) test_data, 1024);
+    vTaskDelay(pdMS_TO_TICKS(500));
+  }
+  
 }

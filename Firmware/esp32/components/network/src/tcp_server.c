@@ -33,32 +33,21 @@ static void get_ip_string (struct sockaddr_in6 *addr, char *addr_string) {
   }
 }
 
-static void do_retransmit (const int sock) {
-  int len;
+static bool accept_connection (const int socket) {
+  size_t len;
   char rx_buffer[128];
 
-  do {
-    len = recv(sock, rx_buffer, sizeof(rx_buffer) - 1, 0);
-    if (len < 0) {
-      ESP_LOGE(TAG, "Error occurred during receiving: errno %d", errno);
-    } else if (len == 0) {
-      ESP_LOGW(TAG, "Connection closed");
-    } else {
-      rx_buffer[len] = 0; // Null-terminate whatever is received and treat it like a string
-      ESP_LOGI(TAG, "Received %d bytes: %s", len, rx_buffer);
-
-      // send() can return less bytes than supplied length.
-      // Walk-around for robust implementation. 
-      int to_write = len;
-      while (to_write > 0) {
-        int written = send(sock, rx_buffer + (len - to_write), to_write, 0);
-        if (written < 0) {
-          ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
-        }
-        to_write -= written;
-      }
-    }
-  } while (len > 0);
+  len = recv(socket, rx_buffer, sizeof(rx_buffer) - 1, 0);
+  if (len < 0) {
+    ESP_LOGE(TAG, "Error occurred during receiving: errno %d", errno);
+    return false;
+  } else if (len == 0) {
+    ESP_LOGW(TAG, "Connection closed");
+    return false;
+  } else {
+    printf("%s\n", rx_buffer);
+    return (strcmp("connection_request", rx_buffer) == 0)? true : false;
+  }
 }
 
 static void clean_up (int socket) {
@@ -93,36 +82,47 @@ static void tcp_server_task () {
   }
   ESP_LOGI(TAG, "Socket bound, port %d", PORT);
 
-  err = listen(listen_socket, 1);
-  if (err != 0) {
-      ESP_LOGE(TAG, "Error occurred during listen: errno %d", errno);
-      clean_up(listen_socket);
-  }
-
+  /* Socket listen loop */
   while (1) {
+    err = listen(listen_socket, 1);
+    if (err != 0) {
+        ESP_LOGE(TAG, "Error occurred during listen: errno %d", errno);
+        clean_up(listen_socket);
+        break;
+    }
+    ESP_LOGI(TAG, "Listen started");
+
     struct sockaddr_in6 source_addr; // Large enough for both IPv4 or IPv6
     uint addr_len = sizeof(source_addr);
     int sock = accept(listen_socket, (struct sockaddr *)&source_addr, &addr_len);
     if (sock < 0) {
         ESP_LOGE(TAG, "Unable to accept connection: errno %d", errno);
-        break;
+        // break;
     }
 
-
     get_ip_string(&recv_addr, addr_str);
-    // ESP_LOGI(TAG, "Received %d bytes from %s:", len, addr_str);
-    // ESP_LOGI(TAG, "%s", rx_buffer);
 
-    do_retransmit(sock);
+    if (!accept_connection(sock)) continue;
+    
+    ESP_LOGI(TAG, "Broadcast started");
+    client_connected = true;
 
-    // if (strcmp("connection_request", rx_buffer) == 0) {
-    //   ESP_LOGI(TAG, "Found client");
-    //   client_addr = recv_addr;
-    //   client_connected = true;
-    // }
-    shutdown(listen_socket, 0);
-    close(listen_socket);
+    /* Send loop */
+    broadcast_message_t msg;
+    while (1) {
+      if (xQueueReceive(tcp_server_queue, &msg, (TickType_t) 10)) {
+        int written = send(sock, msg.data, msg.len, 0);
+        free(msg.data);
+        if (written < 0) {
+          ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
+          break;
+        }
+      }
+    }
+
+    client_connected = false;
   }
+  close(listen_socket);
   vTaskDelete(NULL);
 }
 
@@ -131,12 +131,13 @@ void tcp_server_init () {
   xTaskCreatePinnedToCore(tcp_server_task, "tcp_server", 4096, NULL, 5, NULL, 0);
 }
 
-esp_err_t send_tcp_packet (uint8_t *data, size_t len) {
-  if (!client_connected) return ESP_OK;
-  int64_t start_time = esp_timer_get_time();
-  int err = sendto(listen_socket, data, len, 0, (struct sockaddr *)&client_addr, sizeof(client_addr));
-  if (err < 0) {
-    ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
-  }
-  return err;
+void send_tcp_packet (uint8_t *data, size_t len) {
+  if (!client_connected) return;
+  broadcast_message_t msg;
+  /* Deep copy the message */
+  msg.data = (uint8_t*) malloc(len);
+  msg.len = len;
+  memcpy(data, msg.data, len);
+
+  xQueueSend(tcp_server_queue, &msg, (TickType_t) 100);
 }
