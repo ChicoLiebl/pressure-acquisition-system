@@ -11,7 +11,9 @@ from __future__ import unicode_literals
 import os
 import sys
 import re
+import struct
 import socket
+import numpy as np
 
 
 # -----------  Config  ----------
@@ -41,7 +43,10 @@ def tcp_client(address, payload):
             data = sock.recv(1024)
             if not data:
                 return
-            print(f'Received: {data.__len__()} bytes')
+            numbers = np.array(list(struct.iter_unpack('B', data)))
+            print(numbers.transpose())
+            # print(f'Received: {data.__len__()} bytes, byte[0] = {numbers[0:10]}')
+            # print(data.decode())
         except KeyboardInterrupt:
             exit(0)
     sock.close()
