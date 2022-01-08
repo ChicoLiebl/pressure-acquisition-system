@@ -12,11 +12,14 @@
 // #include "broadcast.h"
 #include "tcp_server.h"
 
-// const char ssid[] = "CLARO_2GDFA429";
-// const char passwd[] = "B8DFA429";
+const char ssid[] = "CLARO_2GDFA429";
+const char passwd[] = "B8DFA429";
 
-const char ssid[] = "tracktum-setup";
-const char passwd[] = "tracktum-1234";
+// const char ssid[] = "tracktum-setup";
+// const char passwd[] = "tracktum-1234";
+
+// const char ssid[] = "SchoeffelLiebl";
+// const char passwd[] = "30041988";
 
 static bool wifi_connected = false;
 
@@ -68,7 +71,7 @@ static void throuput_test_task () {
     test_data[0]++;
     send_tcp_packet((uint8_t*) test_data, TEST_LEN);
     // send_tcp_packet(lorem_ipsum, sizeof(lorem_ipsum));
-    vTaskDelay(pdMS_TO_TICKS(300));
+    vTaskDelay(pdMS_TO_TICKS(100));
   }
 }
 

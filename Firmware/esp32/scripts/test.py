@@ -44,8 +44,8 @@ def tcp_client(address, payload):
             if not data:
                 return
             numbers = np.array(list(struct.iter_unpack('B', data)))
-            print(numbers.transpose())
-            # print(f'Received: {data.__len__()} bytes, byte[0] = {numbers[0:10]}')
+            # print(numbers.transpose())
+            print(f'Received: {data.__len__()} bytes, byte[0] = {numbers[0, 0]}')
             # print(data.decode())
         except KeyboardInterrupt:
             exit(0)
