@@ -11,6 +11,8 @@ import logging
 
 from threading import Thread
 
+from numpy.core.multiarray import array
+
 class TcpClient():
   def __init__(
       self, address: str, data: np.ndarray, dataFormat: str, 
@@ -62,29 +64,24 @@ class TcpClient():
     self.socketThread.join()
 
   def __socketTask(self):
-    packetHeaderLen = self.header.__len__()
-    # packetSize = struct.calcsize(self.dataFormat) + packetHeaderLen
-    # packets = 10
-
     totalLen = 0
     packet = bytes([])
     while self.isRun:
-
-      # while totalLen < self.maxPacketLen:
 
       rawData = self.socket.recv(512)
       if not rawData:
         continue
       self.isReceiving = True
       rawDataLen = rawData.__len__()
-      # print(f'totalLen: {totalLen}, paketLen: {packet.__len__()}, dataLen: {rawDataLen}')
       totalLen += rawDataLen
       if (totalLen >= self.maxPacketLen):
-        # print(f'totalLen: {totalLen}, dataLen: {rawDataLen}, copyLen: {rawDataLen - (totalLen - self.maxPacketLen)}')
         copyLen = rawDataLen - (totalLen - self.maxPacketLen)
         packet += rawData[:copyLen]
-        unpacked = np.array(list(struct.iter_unpack(self.dataFormat, packet)))
-        print(f'Received: {packet.__len__()} bytes, byte[0] = {unpacked[0, 0]}')
+        unpacked = np.array(list(struct.iter_unpack(self.dataFormat, packet))).transpose()[0]
+        unpackedLen = unpacked.size
+        self.outData[:-unpackedLen] = self.outData[unpackedLen:]
+        self.outData[-unpackedLen:] = unpacked
+        
         totalLen -= self.maxPacketLen
         if totalLen == 0:
           packet = bytes([])
@@ -93,11 +90,6 @@ class TcpClient():
 
       else:
         packet += rawData
-
-
-
-        # print(rawDataLen)
-
       
 # -----------  Config  ----------
 PORT = 3333
@@ -108,17 +100,18 @@ if __name__ == '__main__':
     print('Usage: example_test.py <server_address> <message_to_send_to_server>')
     exit(0)
   
-  data = np.array([0] * 1024)
-  print(data)
+  data = np.array([0] * 4096)
+  # print(data)
 
   addr = sys.argv[1]
   msg = sys.argv[2]
-  tcpStream = TcpClient(addr, data, 'h', port=PORT)
+  tcpStream = TcpClient(addr, data, 'H', port=PORT)
 
   tcpStream.connect(msg)
 
   while 1:
     try:
+      print(data)
       time.sleep(0.1)
     except KeyboardInterrupt:
       tcpStream.closeConnection()
