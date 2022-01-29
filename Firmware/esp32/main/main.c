@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <math.h>
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -58,20 +59,36 @@ static void nvs_init() {
   ESP_ERROR_CHECK(ret);
 }
 
-static void throuput_test_task () {
-  #define TEST_LEN (1024) 
+void throuput_test_task () {
+  #define TEST_LEN (512)
 
-  char test_data[TEST_LEN];
+  int16_t test_data[TEST_LEN];
 
   for (int i = 0; i < TEST_LEN; i++) {
-    test_data[i] = i % 255;
+    test_data[i] = i % INT16_MAX;
   }
   test_data[0] = 0;
   while (1) {
     test_data[0]++;
-    send_tcp_packet((uint8_t*) test_data, TEST_LEN);
+    send_tcp_packet((uint8_t*) test_data, TEST_LEN * sizeof(int16_t));
     // send_tcp_packet(lorem_ipsum, sizeof(lorem_ipsum));
     vTaskDelay(pdMS_TO_TICKS(100));
+  }
+}
+
+void integrit_test_task () {
+  #define TEST_LEN (512)
+
+  int16_t test_data[TEST_LEN];
+
+  int counter = 0;
+  while (1) {
+    for (int i = 0; i < TEST_LEN; i++) {
+      test_data[i] = INT16_MAX * sin((float) counter/1000);
+      counter++;
+    }
+    send_tcp_packet((uint8_t*) test_data, TEST_LEN * sizeof(int16_t));
+    vTaskDelay(pdMS_TO_TICKS(10));
   }
 }
 
@@ -85,5 +102,6 @@ void app_main(void) {
   while (wifi_connected == false) vTaskDelay(pdMS_TO_TICKS(100));
   tcp_server_init();
 
-  xTaskCreatePinnedToCore(throuput_test_task, "Throughput Test", 8192, NULL, 10, NULL, 1);  
+  xTaskCreatePinnedToCore(integrit_test_task, "Integrit Test", 8192, NULL, 10, NULL, 1);
+  // xTaskCreatePinnedToCore(throuput_test_task, "Throughput Test", 8192, NULL, 10, NULL, 1);
 }
