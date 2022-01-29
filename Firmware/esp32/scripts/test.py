@@ -18,7 +18,6 @@ import numpy as np
 
 # -----------  Config  ----------
 PORT = 3333
-INTERFACE = 'eth0'
 # -------------------------------
 
 
