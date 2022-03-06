@@ -13,6 +13,8 @@
 // #include "broadcast.h"
 #include "tcp_server.h"
 
+#include "ads8689.h"
+
 const char ssid[] = "CLARO_2GDFA429";
 const char passwd[] = "B8DFA429";
 
@@ -84,7 +86,7 @@ void integrit_test_task () {
   int counter = 0;
   while (1) {
     for (int i = 0; i < TEST_LEN; i++) {
-      test_data[i] = INT16_MAX * sin((float) counter/1000);
+      test_data[i] = INT16_MAX * sin((float) counter/10000);
       counter++;
     }
     send_tcp_packet((uint8_t*) test_data, TEST_LEN * sizeof(int16_t));
@@ -92,16 +94,56 @@ void integrit_test_task () {
   }
 }
 
+void adc_read_test_task () {
+  uint8_t output[4];
+
+  int64_t start_time, end_time;
+  uint16_t raw_val;
+
+  while (1) {
+    start_time = esp_timer_get_time();
+    for (int i = 0; i < 1; i++) {
+      raw_val = read_conversion_data();
+    }
+    end_time = esp_timer_get_time();
+
+    float val_mv = raw_val * 4096 / INT16_MAX * 1.25;
+    printf("Voltage = %.4f V, read time: %lld us\n", val_mv / 1000, end_time - start_time);
+
+
+    vTaskDelay(pdMS_TO_TICKS(100));
+  }
+}
+
 void app_main(void) {
   nvs_init();
 
-  wifi_init(&wifi_callbacks);
-  wifi_start_and_scan();
-  wifi_connect(ssid, passwd);
+  // wifi_init(&wifi_callbacks);
+  // wifi_start_and_scan();
+  // wifi_connect(ssid, passwd);
 
-  while (wifi_connected == false) vTaskDelay(pdMS_TO_TICKS(100));
-  tcp_server_init();
+  // while (wifi_connected == false) vTaskDelay(pdMS_TO_TICKS(100));
+  // tcp_server_init();
 
-  xTaskCreatePinnedToCore(integrit_test_task, "Integrit Test", 8192, NULL, 10, NULL, 1);
+  // xTaskCreatePinnedToCore(integrit_test_task, "Integrit Test", 8192, NULL, 10, NULL, 1);
   // xTaskCreatePinnedToCore(throuput_test_task, "Throughput Test", 8192, NULL, 10, NULL, 1);
+
+
+  spi_bus_config_t spi_bus_cfg = {
+    .mosi_io_num = GPIO_NUM_23,
+    .miso_io_num = GPIO_NUM_19,
+    .sclk_io_num = GPIO_NUM_18,
+    // .quadwp_io_num = GPIO_NUM_13,
+    .quadwp_io_num = -1,
+    .quadhd_io_num = -1,
+  };
+
+  ads8689_init(128, spi_bus_cfg, GPIO_NUM_5, VSPI_HOST);
+
+  /* Set input range to 1.25 * Vref */
+  ads8689_transmit(ADS8689_WRITE_LS, ADS8689_RANGE_SEL_REG, 0x0003, NULL, 0);
+  
+  ads8689_transmit(ADS8689_WRITE_LS, ADS8689_SDO_CTL_REG, 0x3 << 8, NULL, 0);
+
+  xTaskCreatePinnedToCore(adc_read_test_task, "ADC Test", 8192, NULL, 10, NULL, 0);
 }

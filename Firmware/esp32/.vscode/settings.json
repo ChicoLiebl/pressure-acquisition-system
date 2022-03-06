@@ -17,11 +17,14 @@
     "array": "cpp",
     "string_view": "cpp",
     "wifi.h": "c",
-    "network_wifi.h": "c"
+    "network_wifi.h": "c",
+    "spi_master.h": "c",
+    "gpio.h": "c",
+    "i2c_comm.h": "c",
+    "spi_common.h": "c"
   },
   "python.pythonPath": "/usr/bin/python",
   "cmake.configureOnOpen": false,
-  "C_Cpp.dimInactiveRegions": false,
   "C_Cpp.clang_format_fallbackStyle": "{ BasedOnStyle: Google, IndentWidth: 2, ColumnLimit: 0}",
   "files.exclude": {
     "**/esp32s2/**": true,
@@ -37,5 +40,13 @@
     "**/esp32s2/**": true,
     "**/stubs/**": true,
     "**/.vscode": true
-  }
+  },
+  "idf.adapterTargetName": "esp32",
+  "cSpell.words": [
+    "mosi",
+    "quadhd",
+    "quadwp",
+    "sclk",
+    "VSPI"
+  ]
 }
