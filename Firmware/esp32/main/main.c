@@ -95,24 +95,25 @@ void integrit_test_task () {
 }
 
 void adc_read_test_task () {
-  uint8_t output[4];
 
-  int64_t start_time, end_time;
-  uint16_t raw_val;
+  spi_bus_config_t spi_bus_cfg = {
+    .mosi_io_num = GPIO_NUM_23,
+    .miso_io_num = GPIO_NUM_19,
+    .sclk_io_num = GPIO_NUM_18,
+    .quadwp_io_num = -1,
+    .quadhd_io_num = -1,
+  };
 
-  while (1) {
-    start_time = esp_timer_get_time();
-    for (int i = 0; i < 1; i++) {
-      raw_val = read_conversion_data();
-    }
-    end_time = esp_timer_get_time();
+  ads8689_init(spi_bus_cfg, GPIO_NUM_5, SPI2_HOST);
 
-    float val_mv = raw_val * 4096 / INT16_MAX * 1.25;
-    printf("Voltage = %.4f V, read time: %lld us\n", val_mv / 1000, end_time - start_time);
+  /* Set input range to 1.25 * Vref */
+  ads8689_transmit(ADS8689_WRITE_LS, ADS8689_RANGE_SEL_REG, 0x0003, NULL, 0);
+  
+  ads8689_transmit(ADS8689_WRITE_LS, ADS8689_SDO_CTL_REG, 0x3 << 8, NULL, 0);
 
-
-    vTaskDelay(pdMS_TO_TICKS(100));
-  }
+  ads8689_start_stream(4096);
+  
+  vTaskDelete(NULL);
 }
 
 void app_main(void) {
@@ -128,22 +129,5 @@ void app_main(void) {
   // xTaskCreatePinnedToCore(integrit_test_task, "Integrit Test", 8192, NULL, 10, NULL, 1);
   // xTaskCreatePinnedToCore(throuput_test_task, "Throughput Test", 8192, NULL, 10, NULL, 1);
 
-
-  spi_bus_config_t spi_bus_cfg = {
-    .mosi_io_num = GPIO_NUM_23,
-    .miso_io_num = GPIO_NUM_19,
-    .sclk_io_num = GPIO_NUM_18,
-    // .quadwp_io_num = GPIO_NUM_13,
-    .quadwp_io_num = -1,
-    .quadhd_io_num = -1,
-  };
-
-  ads8689_init(128, spi_bus_cfg, GPIO_NUM_5, VSPI_HOST);
-
-  /* Set input range to 1.25 * Vref */
-  ads8689_transmit(ADS8689_WRITE_LS, ADS8689_RANGE_SEL_REG, 0x0003, NULL, 0);
-  
-  ads8689_transmit(ADS8689_WRITE_LS, ADS8689_SDO_CTL_REG, 0x3 << 8, NULL, 0);
-
-  xTaskCreatePinnedToCore(adc_read_test_task, "ADC Test", 8192, NULL, 10, NULL, 0);
+  xTaskCreatePinnedToCore(adc_read_test_task, "ADC Test", 8192, NULL, 10, NULL, 1);
 }

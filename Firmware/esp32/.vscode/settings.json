@@ -21,7 +21,19 @@
     "spi_master.h": "c",
     "gpio.h": "c",
     "i2c_comm.h": "c",
-    "spi_common.h": "c"
+    "spi_common.h": "c",
+    "spi_periph.h": "c",
+    "*.ipp": "c",
+    "hal_defs.h": "c",
+    "lldesc.h": "c",
+    "spi_hal.h": "c",
+    "mutex": "c",
+    "regex": "c",
+    "*.tcc": "c",
+    "spi_types.h": "c",
+    "spi_mem_struct.h": "c",
+    "spi_reg.h": "c",
+    "*.inc": "c"
   },
   "python.pythonPath": "/usr/bin/python",
   "cmake.configureOnOpen": false,
@@ -38,6 +50,9 @@
   "C_Cpp.exclusionPolicy": "checkFilesAndFolders",
   "C_Cpp.files.exclude": {
     "**/esp32s2/**": true,
+    "**/esp32s3/**": true,
+    "**/esp32c3/**": true,
+    "**/esp32h2/**": true,
     "**/stubs/**": true,
     "**/.vscode": true
   },

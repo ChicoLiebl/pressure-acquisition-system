@@ -34,22 +34,18 @@ extern "C"
 {
 #endif
 
-esp_err_t ads8689_init (uint8_t buffer_size, spi_bus_config_t spi_config, gpio_num_t cs_gpio, spi_host_device_t spi_host_id);
+/* Init SPI driver for configuration */
+esp_err_t ads8689_init (spi_bus_config_t spi_config, gpio_num_t cs_gpio, spi_host_device_t spi_host_id);
 
+/* Transmit commands to the device */
 esp_err_t ads8689_transmit (
   ads8689_commands_t command, ads8689_reg_t address, 
   uint16_t data_write, uint8_t *data_read, size_t read_len
 );
 
-void read_device_id ();
+void ads8689_start_stream (size_t buffer_len);
 
-uint16_t read_conversion_data ();
-
-// uint32_t ads8689_read_buffer ();
-
-// uint8_t ads8689_input_available ();
-
-// void ads8689_clear_buffer ();
+size_t ads8689_read_buffer (uint16_t *dest, size_t max_len);
 
 #ifdef __cplusplus
 }
