@@ -43,8 +43,23 @@ esp_err_t ads8689_transmit (
   uint16_t data_write, uint8_t *data_read, size_t read_len
 );
 
-void ads8689_start_stream (size_t buffer_len);
+/**
+ * @brief Creates an internal FIFO buffer and starts streaming data at 100kHz to this buffer 
+ * 
+ * @warning after stream starts ads8689_transmit() cannot be called anymore 
+ * 
+ * @param buffer_len size to allocate internal FIFO buffer
+ * @param sample_freq value for sampling rate in Hz, must be <= 100kHz
+ */
+void ads8689_start_stream (size_t buffer_len, int64_t sample_freq);
 
+/**
+ * @brief Retrieves data from internal FIFO buffers and copy it to dest
+ * 
+ * @param dest buffer to save data
+ * @param max_len maximum length to read from buffer
+ * @return real length read from buffer
+ */
 size_t ads8689_read_buffer (uint16_t *dest, size_t max_len);
 
 #ifdef __cplusplus
