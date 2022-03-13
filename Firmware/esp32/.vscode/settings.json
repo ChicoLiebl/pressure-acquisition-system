@@ -65,6 +65,7 @@
     "**/esp32c3/**": true,
     "**/esp32h2/**": true,
     "**/stubs/**": true,
+    "**/host_test/**": true,
     "**/.vscode": true
   },
   "idf.adapterTargetName": "esp32",

@@ -94,7 +94,11 @@ void integrit_test_task () {
   }
 }
 
-void adc_read_test_task () {
+#define BUFFER_LEN (1024 * 8)
+
+static bool setup_done = false;
+
+void adc_setup_task () {
 
   spi_bus_config_t spi_bus_cfg = {
     .mosi_io_num = GPIO_NUM_23,
@@ -111,9 +115,21 @@ void adc_read_test_task () {
   
   ads8689_transmit(ADS8689_WRITE_LS, ADS8689_SDO_CTL_REG, 0x3 << 8, NULL, 0);
 
-  ads8689_start_stream(4096);
-  
+
+  ads8689_start_stream(BUFFER_LEN, 90000);
+  setup_done = true;
   vTaskDelete(NULL);
+}
+
+void adc_read_task () {
+  uint16_t buffer[BUFFER_LEN];
+  float fs;
+
+  while (1) {
+    size_t read_len = ads8689_read_buffer(buffer, BUFFER_LEN, &fs);
+    printf("read len: %d, sample rate: %.2f kHz\n", read_len, fs / 1000);
+    vTaskDelay(pdMS_TO_TICKS(20));
+  }
 }
 
 void app_main(void) {
@@ -129,5 +145,7 @@ void app_main(void) {
   // xTaskCreatePinnedToCore(integrit_test_task, "Integrit Test", 8192, NULL, 10, NULL, 1);
   // xTaskCreatePinnedToCore(throuput_test_task, "Throughput Test", 8192, NULL, 10, NULL, 1);
 
-  xTaskCreatePinnedToCore(adc_read_test_task, "ADC Test", 8192, NULL, 10, NULL, 1);
+  xTaskCreatePinnedToCore(adc_setup_task, "ADC setup", 32 * 1024, NULL, 10, NULL, 1);
+  while(!setup_done);
+  xTaskCreatePinnedToCore(adc_read_task, "ADC read", 32 * 1024, NULL, 10, NULL, 0);
 }

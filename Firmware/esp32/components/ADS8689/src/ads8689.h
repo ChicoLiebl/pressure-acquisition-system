@@ -58,9 +58,10 @@ void ads8689_start_stream (size_t buffer_len, int64_t sample_freq);
  * 
  * @param dest buffer to save data
  * @param max_len maximum length to read from buffer
+ * @param fs measured average sample frequency
  * @return real length read from buffer
  */
-size_t ads8689_read_buffer (uint16_t *dest, size_t max_len);
+size_t ads8689_read_buffer (uint16_t *dest, size_t max_len, float *fs);
 
 #ifdef __cplusplus
 }

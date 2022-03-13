@@ -9,9 +9,11 @@
 #include "freertos/semphr.h"
 #include "freertos/task.h"
 #include "esp_heap_caps.h"
+#include "driver/timer.h"
 #include "esp_timer.h"
 
 #include "ads8689.h"
+
 
 #define LOG_TAG "ADS8689"
 
@@ -28,6 +30,13 @@
     if ((_i + 1) % 16 == 0) printf("\n"); \
   } \
   printf("\n");
+
+#define USE_HW_TIMER 1
+
+#if USE_HW_TIMER
+timer_group_t timer_group = TIMER_GROUP_0;
+timer_idx_t timer_id = TIMER_0;
+#endif
 
 /* Mosi and miso buffers */
 static uint8_t *mosi_buffer = NULL;
@@ -54,7 +63,7 @@ int64_t *read_time_us = NULL;
 static void IRAM_ATTR spi_handler(void *arg) {
   spi_dev_t *dev = spi_bus_hal.hw;
   circular_buffer_t *buffer = &receive_buffer;
-  ets_printf("spi intr: %d\n", dev->slave.trans_done);
+  // ets_printf("spi intr: %d\n", dev->slave.trans_done);
 
 
   dev->slave.trans_done = 0; // reset the register
@@ -72,7 +81,7 @@ static void IRAM_ATTR spi_handler(void *arg) {
     buffer->rear++;
     if (buffer->rear == buffer->len) buffer->rear = 0;
   }
-  read_time_us[front] = esp_timer_get_time() - start_time;
+  // read_time_us[front] = esp_timer_get_time() - start_time;
   // ets_printf("front %d, rear %d\n", receive_buffer.front, receive_buffer.rear);
 }
 
@@ -139,13 +148,31 @@ esp_err_t ads8689_transmit (
   return ret;
 }
 
+static volatile int64_t real_timer_period;
+
 static void IRAM_ATTR read_timer_callback (void *arg) {
+  #if USE_HW_TIMER
+  // Get interrupt status
+	uint32_t intr_status = TIMERG0.int_st_timers.val;
+	
+	// Delete interrupt flags 
+	if((intr_status & BIT(timer_id)) && (timer_id) == TIMER_0) 
+    TIMERG0.int_clr_timers.t0 = 1;
+
+	// Reactivate alarm
+	TIMERG0.hw_timer[timer_id].config.alarm_en = TIMER_ALARM_EN;	
+
+  #endif
+
+  read_time_us[receive_buffer.front] = esp_timer_get_time() - start_time;
+  // real_timer_period = esp_timer_get_time() - start_time;
   // ets_printf("timer intr: %lld, %d\n", esp_timer_get_time() - start_time, spi_bus_hal.hw->cmd.usr);
   // printf("read val = %.4f\n", (float) (test_data - INT16_MAX) * 4096 / INT16_MAX * 1.25 / 1000);
   start_time = esp_timer_get_time();
   spi_bus_hal.hw->cmd.usr = 1;
   // esp_timer_isr_dispatch_need_yield();
 }
+
 
 void ads8689_start_stream (size_t buffer_len, int64_t sample_freq) {
   if (sample_freq > 100000) {
@@ -156,7 +183,6 @@ void ads8689_start_stream (size_t buffer_len, int64_t sample_freq) {
   receive_buffer.len = buffer_len;
   receive_buffer.data = (uint16_t*) malloc(buffer_len * sizeof(uint16_t));
   read_time_us = (int64_t*) malloc(buffer_len * sizeof(int64_t));
-
 
   /* Switch spi trans_done interrupt for one locally defined */
   // free spi intr
@@ -174,38 +200,73 @@ void ads8689_start_stream (size_t buffer_len, int64_t sample_freq) {
   ESP_ERROR_CHECK(esp_intr_enable(spi_intr_handle));
 
   /* Create the reading timer */
+  int64_t sample_period = 1000000 / sample_freq;
+  printf("sample time %lld\n", sample_period);
+
+
+  #if USE_HW_TIMER
+  timer_group_t timer_group = TIMER_GROUP_0;
+  timer_idx_t timer_id = TIMER_0;
+  timer_config_t hw_timer_config = {
+    .alarm_en = TIMER_ALARM_EN,
+    .counter_dir = TIMER_PAUSE,
+    .intr_type = TIMER_INTR_LEVEL,
+    .counter_dir = TIMER_COUNT_UP,
+    .auto_reload = TIMER_AUTORELOAD_EN,
+    .divider = 8
+  };
+  /* With divider 8, counter resolution is 100ns, so we multiply 10 times the us time */
+
+	timer_init(timer_group, timer_id, &hw_timer_config);
+	
+	// Set timer to start value
+	timer_set_counter_value(timer_group, timer_id, 0x00000000ULL);
+	
+	// Set timer alarm
+  uint64_t overflow_value = sample_period * 10;
+  printf("Overflow value %lld\n", overflow_value);
+	timer_set_alarm_value(timer_group, timer_id, overflow_value);
+	timer_enable_intr(timer_group, timer_id);
+	timer_isr_register(timer_group, timer_id, read_timer_callback, NULL, ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_LEVEL1, NULL);	
+  
+  vTaskDelay(pdMS_TO_TICKS(100));
+  timer_start(timer_group, timer_id);
+
+  #else
   esp_timer_handle_t read_timer_handle;
   esp_timer_create_args_t read_timer_args = {
     .callback = &read_timer_callback,
     .arg = NULL,
-    .dispatch_method = ESP_TIMER_TASK,
+    .dispatch_method = ESP_TIMER_ISR,
     .name = "ADS8689 acquire timer"
   };
 
   esp_timer_create(&read_timer_args, &read_timer_handle);
-  printf("sample time %lld\n", 1000000 / sample_freq);
   esp_timer_start_periodic(read_timer_handle, 1000000 / sample_freq);
+  #endif
+
 }
 
-static void log_avg_acquisition_time (int64_t *read_time, size_t len) {
+static void set_avg_sample_frequency (int64_t *read_time, size_t len, float *fs) {
+  if (fs == NULL) return;
   float avg_period = 0;
   for (int i = 0; i < len; i++) {
     avg_period += read_time[i];
   }
-  ESP_LOGI(LOG_TAG, "Avg aquisition time: %f", avg_period / len);
+  *fs = (float) len * 1000000 / avg_period;
 }
 
-size_t ads8689_read_buffer (uint16_t *dest, size_t max_len) {
+size_t ads8689_read_buffer (uint16_t *dest, size_t max_len, float *fs) {
   circular_buffer_t *buffer = &receive_buffer;
   // printf("last read time = %lld\n", read_time_us[buffer->front - 1]);
-
+  // printf("timer T = %lld\n", real_timer_period);
   if (buffer->front == buffer->rear) return 0;
 
   if (buffer->front > buffer->rear) {
     // printf("front > rear\n");
     size_t read_len = min(max_len, buffer->front - buffer->rear);
     memcpy(dest, buffer->data + buffer->rear, read_len);
-    // log_avg_acquisition_time(read_time_us + buffer->rear, read_len);
+    set_avg_sample_frequency(read_time_us + buffer->rear, read_len, fs);
     // PRINT_BUFFER("%lld ", (read_time_us + buffer->rear), read_len);
     buffer->rear += read_len;
     return read_len;
