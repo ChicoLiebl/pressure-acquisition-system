@@ -11,6 +11,14 @@
 #include "network_wifi.h"
 #include "esp_log.h"
 
+#define DEBUG_LOG 1
+
+#if DEBUG_LOG
+#define WIFI_LOG(format, ... ) ESP_LOGW("WIFI", format, ##__VA_ARGS__)
+#else
+#define WIFI_LOG(format, ... )
+#endif
+
 static wifi_callbacks_t *global_wifi_callbacks = NULL;
 static esp_netif_t *global_wifi_netif = NULL;
 static bool wifi_running = false;
@@ -23,7 +31,9 @@ static void scan_done_handler() {
   wifi_ap_record_t scan_result[len];
 
   esp_err_t ret = esp_wifi_scan_get_ap_records(&len, scan_result);  
-  
+  for (int i = 0; i < len; i++) {
+    printf("SSID:%s\n", scan_result[i].ssid);
+  }
   if (ret == ESP_OK && global_wifi_callbacks->on_scan_result != NULL) {            
     global_wifi_callbacks->on_scan_result(len, scan_result);    
   }
@@ -38,6 +48,7 @@ static IRAM_ATTR void event_handler (
       // wifi ready
       case WIFI_EVENT_STA_START: {        
         ESP_ERROR_CHECK(wifi_scan());        
+        WIFI_LOG("Start");
       } break;
       // disconnection
       case WIFI_EVENT_STA_STOP:
@@ -46,7 +57,8 @@ static IRAM_ATTR void event_handler (
           global_wifi_callbacks->on_disconnection();
         break;
       // scan finished
-      case WIFI_EVENT_SCAN_DONE:                
+      case WIFI_EVENT_SCAN_DONE:
+        WIFI_LOG("Scan done");
         scan_done_handler();        
         break;
       default: break;

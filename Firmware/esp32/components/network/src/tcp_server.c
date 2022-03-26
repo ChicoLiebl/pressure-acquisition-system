@@ -54,6 +54,8 @@ static void clean_up (int socket) {
   close(socket);
 }
 
+static int tcp_socket;
+
 static void tcp_server_task () {
   char rx_buffer[128];
   char addr_str[128];
@@ -94,37 +96,39 @@ static void tcp_server_task () {
 
     struct sockaddr_in6 source_addr; // Large enough for both IPv4 or IPv6
     uint addr_len = sizeof(source_addr);
-    int sock = accept(listen_socket, (struct sockaddr *)&source_addr, &addr_len);
-    if (sock < 0) {
+    tcp_socket = accept(listen_socket, (struct sockaddr *)&source_addr, &addr_len);
+    if (tcp_socket < 0) {
         ESP_LOGE(TAG, "Unable to accept connection: errno %d", errno);
         // break;
     }
 
     get_ip_string(&recv_addr, addr_str);
 
-    if (!accept_connection(sock)) continue;
-    
+    if (!accept_connection(tcp_socket)) continue;
+
     ESP_LOGI(TAG, "Broadcast started");
     client_connected = true;
 
-    /* Send loop */
-    int64_t start_time, send_time;
-    broadcast_message_t msg;
-    while (1) {
-      if (xQueueReceive(tcp_server_queue, &msg, (TickType_t) 10)) {
-        start_time = esp_timer_get_time();
-        int written = send(sock, msg.data, msg.len, 0);
-        send_time = esp_timer_get_time() - start_time;
-        ESP_LOGW(TAG, "Sent %d bytes in %lld us, %.2f kB/s", 
-          msg.len, send_time, (float) (msg.len * 1000) / (float) send_time
-        );
-        free(msg.data);
-        if (written < 0) {
-          ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
-          break;
-        }
-      }
-    }
+    vTaskSuspend(tcp_server_task_handle);
+
+  //   /* Send loop */
+  //   int64_t start_time, send_time;
+  //   broadcast_message_t msg;
+  //   while (1) {
+  //     if (xQueueReceive(tcp_server_queue, &msg, (TickType_t) 10)) {
+  //       start_time = esp_timer_get_time();
+  //       int written = send(tcp_socket, msg.data, msg.len, 0);
+  //       send_time = esp_timer_get_time() - start_time;
+  //       ESP_LOGW(TAG, "Sent %d bytes in %lld us, %.2f kB/s", 
+  //         msg.len, send_time, (float) (msg.len * 1000) / (float) send_time
+  //       );
+  //       free(msg.data);
+  //       if (written < 0) {
+  //         ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
+  //         break;
+  //       }
+  //     }
+  //   }
 
     client_connected = false;
   }
@@ -134,7 +138,17 @@ static void tcp_server_task () {
 
 void tcp_server_init () {
   tcp_server_queue = xQueueCreate(10, sizeof(broadcast_message_t));
-  xTaskCreatePinnedToCore(tcp_server_task, "tcp_server", 4096, NULL, 5, NULL, 0);
+  xTaskCreatePinnedToCore(tcp_server_task, "tcp_server", 4096, NULL, 5, &tcp_server_task_handle, 0);
+}
+
+void tcp_server_send_sync (uint8_t *data, size_t len) {
+  if (!client_connected) return;
+  
+  int sent = send(tcp_socket, data, len, 0);
+  if (sent < 0) {
+    ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
+    vTaskResume(tcp_server_task_handle);
+  }
 }
 
 void send_tcp_packet (uint8_t *data, size_t len) {

@@ -44,7 +44,10 @@
     "random": "c",
     "istream": "c",
     "limits": "c",
-    "esp_timer.h": "c"
+    "esp_timer.h": "c",
+    "esp_log.h": "c",
+    "math.h": "c",
+    "stream_buffer.h": "c"
   },
   "python.pythonPath": "/usr/bin/python",
   "cmake.configureOnOpen": false,

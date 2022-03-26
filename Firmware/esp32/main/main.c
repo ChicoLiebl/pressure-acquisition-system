@@ -35,15 +35,6 @@ static void on_wifi_connection (esp_netif_ip_info_t *ipv4, esp_netif_ip6_info_t 
   return;
 }
 
-const char lorem_ipsum[] = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. \
-  Sed metus sem, tincidunt eu rhoncus vel, vulputate finibus nulla. Suspendisse eleifend\
-  purus et ipsum auctor, et congue massa semper. Ut dictum vitae turpis sit amet sodales. \
-  Duis non lacus vel orci malesuada interdum. Praesent non tortor non metus efficitur finibus \
-  faucibus in nunc. Donec placerat elit nec sapien elementum posuere. Cras gravida congue elit \
-  nec ultricies. Nullam ipsum enim, consectetur non dictum sed, aliquam vitae nisl. \
-  In efficitur justo at tortor aliquet interdum non a arcu. Phasellus aliquet sem vel \
-  pharetra tempus.";
-
 wifi_callbacks_t wifi_callbacks = {
   .on_scan_result = NULL,
   .on_connection = on_wifi_connection,
@@ -72,8 +63,7 @@ void throuput_test_task () {
   test_data[0] = 0;
   while (1) {
     test_data[0]++;
-    send_tcp_packet((uint8_t*) test_data, TEST_LEN * sizeof(int16_t));
-    // send_tcp_packet(lorem_ipsum, sizeof(lorem_ipsum));
+    // send_tcp_packet((uint8_t*) test_data, TEST_LEN * sizeof(int16_t));
     vTaskDelay(pdMS_TO_TICKS(100));
   }
 }
@@ -83,14 +73,17 @@ void integrit_test_task () {
 
   int16_t test_data[TEST_LEN];
 
+  float fs = 1e3;
+
   int counter = 0;
   while (1) {
     for (int i = 0; i < TEST_LEN; i++) {
-      test_data[i] = INT16_MAX * sin((float) counter/10000);
+      test_data[i] = INT16_MAX * sin((float) counter / (fs * M_PI));
       counter++;
+      
     }
-    send_tcp_packet((uint8_t*) test_data, TEST_LEN * sizeof(int16_t));
-    vTaskDelay(pdMS_TO_TICKS(10));
+    tcp_server_send_sync((uint8_t*) test_data, TEST_LEN * sizeof(int16_t));
+    vTaskDelay(pdMS_TO_TICKS(100));
   }
 }
 
@@ -116,31 +109,41 @@ void adc_setup_task () {
   ads8689_transmit(ADS8689_WRITE_LS, ADS8689_SDO_CTL_REG, 0x3 << 8, NULL, 0);
 
 
-  ads8689_start_stream(BUFFER_LEN, 90000);
+  ads8689_start_stream(BUFFER_LEN, 1000);
   setup_done = true;
   vTaskDelete(NULL);
 }
 
 void adc_read_task () {
-  uint16_t buffer[BUFFER_LEN];
+  int16_t buffer[BUFFER_LEN];
   float fs;
 
   while (1) {
     size_t read_len = ads8689_read_buffer(buffer, BUFFER_LEN, &fs);
-    printf("read len: %d, sample rate: %.2f kHz\n", read_len, fs / 1000);
-    vTaskDelay(pdMS_TO_TICKS(20));
+    // send_tcp_packet((uint8_t*) buffer, read_len * sizeof(uint16_t));
+    for (int i = 0; i < read_len; i++) {
+      printf("%d%c", buffer[i], ((i + 1) % 10 == 0)? '\n':' ');
+    }
+    printf("\n");
+    tcp_server_send_sync((uint8_t*) buffer, read_len * sizeof(uint16_t));
+    // printf("read len: %d, sample rate: %.2f kHz\n", read_len, fs / 1000);
+    // vTaskDelay(1);
+    vTaskDelay(pdMS_TO_TICKS(10));
   }
 }
 
 void app_main(void) {
   nvs_init();
 
-  // wifi_init(&wifi_callbacks);
-  // wifi_start_and_scan();
-  // wifi_connect(ssid, passwd);
+  wifi_init(&wifi_callbacks);
+  wifi_start_and_scan();
+  wifi_connect(ssid, passwd);
 
-  // while (wifi_connected == false) vTaskDelay(pdMS_TO_TICKS(100));
-  // tcp_server_init();
+  while (wifi_connected == false) {
+    vTaskDelay(pdMS_TO_TICKS(1000));
+    ESP_LOGI("WIFI", "Waiting connection");
+  }
+  tcp_server_init();
 
   // xTaskCreatePinnedToCore(integrit_test_task, "Integrit Test", 8192, NULL, 10, NULL, 1);
   // xTaskCreatePinnedToCore(throuput_test_task, "Throughput Test", 8192, NULL, 10, NULL, 1);

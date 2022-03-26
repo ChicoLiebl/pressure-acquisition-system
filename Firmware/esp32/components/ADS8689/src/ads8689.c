@@ -11,6 +11,7 @@
 #include "esp_heap_caps.h"
 #include "driver/timer.h"
 #include "esp_timer.h"
+#include "stream_buffer.h"
 
 #include "ads8689.h"
 
@@ -43,7 +44,7 @@ static uint8_t *mosi_buffer = NULL;
 static uint8_t *miso_buffer = NULL;
 
 typedef struct circular_buffer_t {
-  uint16_t *data;
+  int16_t *data;
   size_t len;
   size_t front;
   size_t rear;
@@ -67,10 +68,11 @@ static void IRAM_ATTR spi_handler(void *arg) {
 
 
   dev->slave.trans_done = 0; // reset the register
-  uint32_t data = SPI_SWAP_DATA_RX(*(dev->data_buf), 16);
+  uint32_t data = SPI_SWAP_DATA_RX(*(dev->data_buf), 18);
   size_t front = buffer->front;
 
   buffer->data[buffer->front] = data;
+  // if (buffer->data[buffer->front] > 30000) ets_printf("%d\n", data);
 
   /* Increments circular buffer front */
   buffer->front++;
@@ -181,7 +183,7 @@ void ads8689_start_stream (size_t buffer_len, int64_t sample_freq) {
   }
 
   receive_buffer.len = buffer_len;
-  receive_buffer.data = (uint16_t*) malloc(buffer_len * sizeof(uint16_t));
+  receive_buffer.data = (int16_t*) malloc(buffer_len * sizeof(int16_t));
   read_time_us = (int64_t*) malloc(buffer_len * sizeof(int64_t));
 
   /* Switch spi trans_done interrupt for one locally defined */
@@ -256,38 +258,59 @@ static void set_avg_sample_frequency (int64_t *read_time, size_t len, float *fs)
   *fs = (float) len * 1000000 / avg_period;
 }
 
-size_t ads8689_read_buffer (uint16_t *dest, size_t max_len, float *fs) {
-  circular_buffer_t *buffer = &receive_buffer;
-  // printf("last read time = %lld\n", read_time_us[buffer->front - 1]);
-  // printf("timer T = %lld\n", real_timer_period);
-  if (buffer->front == buffer->rear) return 0;
+#define DEBUG_CIRC_BUFFER 0
 
-  if (buffer->front > buffer->rear) {
+size_t ads8689_read_buffer (int16_t *dest, size_t max_len, float *fs) {
+  circular_buffer_t *buffer = &receive_buffer;
+  size_t front = buffer->front; // front can be updated during function runtime
+  size_t read_len = 0;
+
+  #if DEBUG_CIRC_BUFFER
+  printf("Rear: %d, Front %d\n", buffer->rear, front);
+  #endif
+  // printf("last read time = %lld\n", read_time_us[front - 1]);
+  // printf("timer T = %lld\n", real_timer_period);
+  // float test_val = (float) (buffer->data[buffer->rear]) * 4096 / INT16_MAX * 1.25 / 1000;
+  // printf("Last value = %f\n", test_val);
+
+  if (front == buffer->rear) {
+    read_len = 0;
+  } else if (front > buffer->rear) {
+    if (front > 10) front -= 10;
+    else return 0;
     // printf("front > rear\n");
-    size_t read_len = min(max_len, buffer->front - buffer->rear);
+    read_len = min(max_len, front - buffer->rear);
     memcpy(dest, buffer->data + buffer->rear, read_len);
     set_avg_sample_frequency(read_time_us + buffer->rear, read_len, fs);
     // PRINT_BUFFER("%lld ", (read_time_us + buffer->rear), read_len);
+    
+    /* Update rear */
     buffer->rear += read_len;
-    return read_len;
+  } else {
+    /* If rear > front, buffer is divided */
+    size_t end_len = (buffer->len - buffer->rear);
+    size_t start_len = min(front, max_len - end_len);
+
+    if (front > 10) front -= 10;
+    else start_len = 0;
+
+    if (end_len >= max_len || start_len == 0) {
+      memcpy(dest, buffer->data + buffer->rear, max_len);
+      if (buffer->rear == buffer->len) buffer->rear = 0;
+      read_len = max_len;
+      buffer->rear += read_len;
+    } else {
+      memcpy(dest, buffer->data + buffer->rear, end_len);
+      memcpy(dest + end_len, buffer->data, start_len);
+
+      read_len = end_len + start_len;
+      buffer->rear = start_len;
+    }
   }
 
-  /* If read > front, buffer is divided */
-  // printf("front < rear\n");
-  size_t end_len = (buffer->len - buffer->rear);
-  if (end_len >= max_len) {
-    memcpy(dest, buffer->data + buffer->rear, max_len);
-    buffer->rear += max_len;
-    if (buffer->rear == buffer->len) buffer->rear = 0;
-    return max_len;
-  }
-
-  memcpy(dest, buffer->data + buffer->rear, end_len);
-  size_t start_len = min(buffer->front, max_len - end_len);
-  memcpy(dest + end_len, buffer->data, start_len);
-
-  buffer->rear = start_len;
-
-  return end_len + start_len;
+  #if DEBUG_CIRC_BUFFER
+  printf("New Rear: %d, read len: %d\n", buffer->rear, read_len);
+  #endif
+  return read_len;
 }
 

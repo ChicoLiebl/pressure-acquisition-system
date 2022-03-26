@@ -11,6 +11,6 @@ typedef struct broadcast_message_t {
 
 void tcp_server_init ();
 
-void send_tcp_packet (uint8_t *data, size_t len);
+void tcp_server_send_sync (uint8_t *data, size_t len);
 
 #endif
