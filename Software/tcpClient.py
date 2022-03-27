@@ -1,9 +1,5 @@
-# from __future__ import print_function
-# from __future__ import unicode_literals
-import os
 import time
 import sys
-import copy
 import struct
 import socket
 import numpy as np
@@ -15,17 +11,18 @@ from numpy.core.multiarray import array
 
 class TcpClient():
   def __init__(
-      self, address: str, data: np.ndarray, dataFormat: str, 
-      packetHeader=b'\xFD', maxPacketLen=1024, port=3333
+      self, address: str, dataFormat: str, onDataCb, 
+      packetHeader=b'\xFD', maxPacketLen=2048, port=3333
     ):
     self.serverAddr = address
     self.port = port
     self.socket = None
-    self.outData = data
     self.dataFormat = dataFormat
-    self.bufferLength = data[0].size
     self.header = packetHeader
     self.maxPacketLen = maxPacketLen
+    self.onDataCb = onDataCb
+
+    self.currException = None
     
     self.isRun = False
     self.socketThread = None
@@ -55,8 +52,10 @@ class TcpClient():
       self.socketThread.start()
       logging.info('Socket thread started')
       # Block till we start receiving values
-      while self.isReceiving != True:
+      while self.isReceiving != True and self.isRun == True:
         time.sleep(0.1)
+      if not self.isRun:
+        raise self.currException
   
   def closeConnection(self):
     self.isRun = False
@@ -67,8 +66,15 @@ class TcpClient():
     totalLen = 0
     packet = bytes([])
     while self.isRun:
+      
+      try:
+        rawData = self.socket.recv(1024)
+      except Exception as e:
+        self.currException = e
+        self.isRun = False
+        self.socket.close()
+        continue
 
-      rawData = self.socket.recv(512)
       if not rawData:
         continue
       self.isReceiving = True
@@ -79,8 +85,7 @@ class TcpClient():
         packet += rawData[:copyLen]
         unpacked = np.array(list(struct.iter_unpack(self.dataFormat, packet))).transpose()[0]
         unpackedLen = unpacked.size
-        self.outData[:-unpackedLen] = self.outData[unpackedLen:]
-        self.outData[-unpackedLen:] = unpacked
+        self.onDataCb(unpacked, unpackedLen)
         
         totalLen -= self.maxPacketLen
         if totalLen == 0:
@@ -90,11 +95,13 @@ class TcpClient():
 
       else:
         packet += rawData
+    
       
 # -----------  Config  ----------
 PORT = 3333
 # -------------------------------
 
+""" TODO: Update example """
 if __name__ == '__main__':
   if not(sys.argv[2:]):
     print('Usage: example_test.py <server_address> <message_to_send_to_server>')

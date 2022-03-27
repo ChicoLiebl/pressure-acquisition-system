@@ -29,3 +29,15 @@ QComboBox {
   border: none;
   border-radius: 1px;
 }
+
+QCheckBox {
+  padding: 10px 15px;
+  font-size: 18px;
+  text-align: center;
+  text-decoration: none;
+  outline: none;
+  color: #fff;
+  background-color: #4CAF50;
+  border: none;
+  border-radius: 1px;
+}
