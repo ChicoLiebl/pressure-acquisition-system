@@ -68,7 +68,7 @@ class TcpClient():
     while self.isRun:
       
       try:
-        rawData = self.socket.recv(1024)
+        rawData = self.socket.recv(2048)
       except Exception as e:
         self.currException = e
         self.isRun = False

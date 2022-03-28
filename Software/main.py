@@ -1,3 +1,4 @@
+from re import S
 import sys
 import os
 import datetime
@@ -10,7 +11,7 @@ from PyQt5 import QtWidgets
 
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtGui import QColor
-from PyQt5.QtWidgets import QApplication, QGridLayout, QPushButton, QTableWidgetItem, QWidget, QMessageBox, QTableWidget, QCheckBox
+from PyQt5.QtWidgets import QApplication, QGridLayout, QPushButton, QTableWidgetItem, QWidget, QMessageBox, QTableWidget, QCheckBox, QDoubleSpinBox
 import pyqtgraph as pg
 
 from prefixed import Float
@@ -24,6 +25,7 @@ CONVERSION_CONSTANT = 4096 / INT16_MAX * 1.25 / 1000
 SAMPLE_FREQUENCY = 100e3
 
 BUFFER_LEN = 50000
+MAX_DISPLAY_LEN = 10000
 
 SERVER_IP = '192.168.0.209'
 
@@ -86,23 +88,35 @@ class MainWindow(QWidget):
     self.grid.addWidget(self.btConnect, 9, 2)
 
     self.triggerBox = QCheckBox("Trigger")
+    self.triggerBox.clicked.connect(self.setTrigger)
     self.triggerBox.setCheckState(QtCore.Qt.CheckState.Checked)
-    self.grid.addWidget(self.triggerBox, 9, 3)
+    self.grid.addWidget(self.triggerBox, 1, 3)
+
+    self.triggerValueBox = QDoubleSpinBox()
+    self.triggerValueBox.setStepType(QtWidgets.QAbstractSpinBox.StepType.AdaptiveDecimalStepType)
+    self.triggerValueBox.setValue(1.6)
+    self.grid.addWidget(self.triggerValueBox, 1, 4)
+
+    self.nWavesBox = QDoubleSpinBox()
+    self.nWavesBox.setMinimum(2)
+    self.nWavesBox.setMaximum(5)
+    self.nWavesBox.setValue(2)
+    self.grid.addWidget(self.nWavesBox, 1, 5)
 
 
     """ Grid for average values """
-    self.summaryTable = QTableWidget(1, 3)
+    tableSize = 2
+    self.summaryTable = QTableWidget(1, tableSize)
     self.summaryTable.setMaximumHeight(60)
-    self.summaryTable.setHorizontalHeaderLabels(['Current value', 'Average on screen', 'Sample Frequency'])
+    self.summaryTable.setHorizontalHeaderLabels([' Frequency ', ' Peak-Peak '])
     self.summaryTable.setItem(0, 0, QTableWidgetItem())
     self.summaryTable.setItem(0, 1, QTableWidgetItem())
-    self.summaryTable.setItem(0, 2, QTableWidgetItem())
     self.summaryTable.verticalHeader().setVisible(False)
-    self.summaryTable.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.AdjustToContents)
+    self.summaryTable.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.AdjustToContentsOnFirstShow)
     self.summaryTable.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
-    for i in range(3):
+    for i in range(tableSize):
       self.summaryTable.horizontalHeader().setSectionResizeMode(i, QtWidgets.QHeaderView.ResizeToContents)
-    # self.grid.addWidget(self.summaryTable, 1, 1, 1, 5, alignment=QtCore.Qt.AlignLeft)
+    self.grid.addWidget(self.summaryTable, 1, 1, 1, 2, alignment=QtCore.Qt.AlignLeft)
 
     """ Stream Related """
     
@@ -125,12 +139,7 @@ class MainWindow(QWidget):
       pg.PlotDataItem(
         self.xAxis, self.pressure, name='Pressure', 
         connect='all', pen=pg.mkPen(dict(color=self.linesColours[0], width=2)), 
-        antialias=True, autoDownsample=False
-      ),
-      pg.PlotDataItem(
-        [], [], name='Max/Min', 
-        connect='all', antialias=True, autoDownsample=False, 
-        symbol='o', symbolBrush=pg.mkBrush(color=self.linesColours[3])
+        antialias=False, autoDownsample=False
       ),
       pg.PlotDataItem(
         [], [], name='Trigger Level Cross', 
@@ -147,6 +156,14 @@ class MainWindow(QWidget):
 
     """ Update data timer """
     self.timer = None
+
+  def setTrigger(self):
+    if (self.triggerBox.checkState() == False):
+      self.triggerValueBox.setDisabled(True)
+      self.nWavesBox.setDisabled(True)
+    else:
+      self.triggerValueBox.setDisabled(False)
+      self.nWavesBox.setDisabled(False)
 
 
   """ Callback to be called from tcoClient on received data """
@@ -170,7 +187,7 @@ class MainWindow(QWidget):
       return False
     print('socket connected')
     self.timer = QtCore.QTimer()
-    self.timer.setInterval(33)
+    self.timer.setInterval(20)
     self.timer.timeout.connect(self.updateData)
     self.timer.start()
     return True
@@ -207,19 +224,25 @@ class MainWindow(QWidget):
     if self.paused:
       return
     if not self.triggerBox.checkState():
-      self.dataLines[0].setData(self.xAxis, self.pressure)
+      self.dataLines[0].setData(self.xAxis[-MAX_DISPLAY_LEN:], self.pressure[-MAX_DISPLAY_LEN:])
       self.dataLines[1].setData([], [])
-      self.dataLines[2].setData([], [])
       return
 
-    triggerVal = 0
-    plotData, centerIndex, crossIndexes, lowIndex = findWave(self.pressure, 2, triggerVal)
+    plotData, crossIndexes = findWave(self.pressure, int(self.nWavesBox.value()), self.triggerValueBox.value())
     if plotData.size == 0:
       return
     xAxis = np.linspace(0, plotData.size / SAMPLE_FREQUENCY * 1000, num=plotData.size)
     self.dataLines[0].setData(xAxis, plotData)
-    self.dataLines[1].setData([xAxis[centerIndex], xAxis[lowIndex]], [plotData[centerIndex], plotData[lowIndex]])
-    self.dataLines[2].setData([xAxis[i] for i in crossIndexes], [plotData[i] for i in crossIndexes])
+    self.dataLines[1].setData([xAxis[i] for i in crossIndexes], [plotData[i] for i in crossIndexes])
+    
+    """ Measure values """
+    freq = SAMPLE_FREQUENCY / (crossIndexes[1] - crossIndexes[0])
+    ppValue = plotData.max() - plotData.min()
+
+
+    self.summaryTable.item(0, 0).setText(f'{Float(freq):!.2h}Hz')
+    self.summaryTable.item(0, 1).setText(f'{Float(ppValue):!.2h}')
+
 
   def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
     if self.stream != None:

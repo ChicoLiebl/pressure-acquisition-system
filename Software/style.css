@@ -41,3 +41,40 @@ QCheckBox {
   border: none;
   border-radius: 1px;
 }
+
+QCheckBox::indicator {
+  width: 20px;
+  height: 20px;
+}
+
+QTableWidget {
+  /* padding: 10px 15px; */
+  font-size: 18px;
+  text-align: left;
+  text-decoration: none;
+  outline: none;
+  color: #fff;
+  /* background-color: #4CAF50; */
+  border: none;
+  border-radius: 1px;
+}
+
+QDoubleSpinBox {
+  padding: 6px 15px;
+  font-size: 18px;
+  /* text-align: left; */
+  /* text-decoration: none; */
+  /* outline: none; */
+  /* color: #fff; */
+  background-color: #4CAF50;
+  /* border: none; */
+  /* border-radius: 1px; */
+}
+
+QDoubleSpinBox::up-button {
+  width: 40px;
+}
+
+QDoubleSpinBox::down-button {
+  width: 40px;
+}

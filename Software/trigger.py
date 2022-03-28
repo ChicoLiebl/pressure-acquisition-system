@@ -1,45 +1,39 @@
-from weakref import ref
 import numpy as np
 
+def findCross(signal: np.ndarray, triggerLevel: float, hysteresis: float):
+  upValue = triggerLevel + hysteresis
+  downValue = triggerLevel - hysteresis
+  isUp = signal[0] > upValue
+  cross = np.array([], dtype=int)
+  for i, v in enumerate(signal):
+    if isUp and v < downValue:
+      isUp = False
+      cross = np.append(cross, [i])
+    elif not isUp and v > upValue:
+      isUp = True
 
+  return cross
 
 def findWave(signal: np.ndarray, nWaves: int, triggerLevel: float):
-  # if signal.size < 100:
-  #   print('small signal')
-  #   return np.array([])
-
-
   """ Finds trigger level crossing with hysteresis """
-  hysteresis = 1
-  mask1 = (signal[:-1] < (triggerLevel + hysteresis)) & (signal[1:] > (triggerLevel + hysteresis))
-  mask2 = (signal[:-1] > (triggerLevel - hysteresis)) & (signal[1:] < (triggerLevel - hysteresis))
-  cross = np.flatnonzero(mask1 | mask2)
+  hysteresis = 0.1
+
+  cross = findCross(signal, triggerLevel, hysteresis)
 
   """ if few crossing points are found ignore trigger """
   if cross.size < 5:
-    # print(f'cross = {cross}')
-    return np.array([]), 0, [], 0
+    return np.array([]), []
 
   """ Select a center crossing point """
-  centerCross = cross.size - (nWaves * 2) - 2
+  startCross = cross.size - (nWaves) - 1
 
-  meanWave = int(np.mean(cross[1:] - cross[:-1]))
+  """ Copy array to avoid concurency problems """
+  triggered = np.copy(signal[cross[startCross]:cross[startCross + (nWaves)]])
 
-  wave = signal[cross[centerCross - 1] : cross[centerCross + 1]]
-  if wave.size == 0:
-    return np.array([]), 0, [], 0
-
-  centerIndex = wave.argmax() + cross[centerCross - 1]
-  lowIndex = wave.argmin() + cross[centerCross - 1]
-  waveLength = abs(centerIndex - lowIndex)
-
-  triggered = np.copy(signal[centerIndex - (nWaves * waveLength):centerIndex + (nWaves * waveLength) + 1])
-  # print(f'centerIndex = {signal[centerIndex]}, triggered = {triggered[(nWaves * waveLength)]}')
-  # print(triggered.size)
-
-  refCross = cross[centerCross - 1: centerCross + 2] - (centerIndex - (nWaves * waveLength))
+  """ Return reference points used so they can be displayed """
+  refCross = cross[startCross: startCross + 2] - cross[startCross]
   
-  return triggered, int(nWaves * waveLength), refCross, lowIndex - (centerIndex - (nWaves * waveLength))
+  return triggered, refCross
 
 def main():
   # s = np.sin(np.array(range(100)) / 10)
