@@ -1,3 +1,5 @@
+from ctypes import alignment
+from decimal import ROUND_DOWN
 from re import S
 import sys
 import os
@@ -11,7 +13,7 @@ from PyQt5 import QtWidgets
 
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtGui import QColor
-from PyQt5.QtWidgets import QApplication, QGridLayout, QPushButton, QTableWidgetItem, QWidget, QMessageBox, QTableWidget, QCheckBox, QDoubleSpinBox
+from PyQt5.QtWidgets import QApplication, QGridLayout, QPushButton, QTableWidgetItem, QWidget, QMessageBox, QTableWidget, QCheckBox, QDoubleSpinBox, QLineEdit, QLabel
 import pyqtgraph as pg
 
 from prefixed import Float
@@ -27,17 +29,10 @@ SAMPLE_FREQUENCY = 100e3
 BUFFER_LEN = 50000
 MAX_DISPLAY_LEN = 10000
 
-SERVER_IP = '192.168.0.209'
+SERVER_IP = '192.168.0.169'
 
 """ Update data Lock """
 updateDataLock = Lock()
-
-class ComboBox(QtWidgets.QComboBox):
-    onShowPopup = QtCore.pyqtSignal()
-
-    def showPopup(self):
-        self.onShowPopup.emit()
-        super(ComboBox, self).showPopup()
 
 class MainWindow(QWidget):
   def __init__(self, *args, **kwargs):
@@ -52,40 +47,24 @@ class MainWindow(QWidget):
     self.setStyleSheet(style)
 
     self.grid = QGridLayout()
-    self.graph = pg.PlotWidget()
-    self.graph.addLegend()
-    self.grid.addWidget(self.graph, 2, 1, 7, 5)
     
     self.linesColours = ['#DD6677', '#117733', '#88CCEE', '#999933', '#AA4499', '#44AA99', '#332288', '#DDCC77', '#882255']
-
-    self.linePen = pg.mkPen(dict(color='#FF0909', width=3))
 
     self.setLayout(self.grid)
     self.setWindowTitle("Pressure Acquisition System")
 
-    self.portList = [SERVER_IP]
-
-    self.ipsDropdown = ComboBox()
-    self.ipsDropdown.addItems(self.portList)
-    self.ipsDropdown.onShowPopup.connect(self.updatePorts)
-    self.grid.addWidget(self.ipsDropdown, 9, 1)
-
-    self.btPause = QPushButton("Pause")
-    self.btPause.setDefault(True)
-    self.btPause.clicked.connect(self.pauseClick)
-    self.paused = False
-    self.grid.addWidget(self.btPause, 9, 5)
-
-    self.btSave = QPushButton("Save Screen Data")
-    self.btSave.setDefault(True)
-    self.btSave.clicked.connect(self.saveData)
-    self.grid.addWidget(self.btSave, 9, 4)
-
-    self.btConnect = QPushButton("Connect")
-    self.btConnect.setDefault(True)
-    self.btConnect.clicked.connect(self.onConnectClick)
-    self.btConnectPressed = False
-    self.grid.addWidget(self.btConnect, 9, 2)
+    """ Grid for average values """
+    tableSize = 2
+    self.summaryTable = QTableWidget(1, tableSize)
+    self.summaryTable.setMaximumHeight(60)
+    self.summaryTable.setHorizontalHeaderLabels([' Frequency ', ' Peak-Peak '])
+    self.summaryTable.setItem(0, 0, QTableWidgetItem())
+    self.summaryTable.setItem(0, 1, QTableWidgetItem())
+    self.summaryTable.verticalHeader().setVisible(False)
+    self.summaryTable.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.AdjustToContentsOnFirstShow)
+    for i in range(tableSize):
+      self.summaryTable.horizontalHeader().setSectionResizeMode(i, QtWidgets.QHeaderView.Stretch)
+    self.grid.addWidget(self.summaryTable, 1, 1, 1, 2, alignment=QtCore.Qt.AlignCenter)
 
     self.triggerBox = QCheckBox("Trigger")
     self.triggerBox.clicked.connect(self.setTrigger)
@@ -97,40 +76,72 @@ class MainWindow(QWidget):
     self.triggerValueBox.setValue(1.6)
     self.grid.addWidget(self.triggerValueBox, 1, 4)
 
+    self.triggerHistBox = QDoubleSpinBox()
+    self.triggerHistBox.setStepType(QtWidgets.QAbstractSpinBox.StepType.AdaptiveDecimalStepType)
+    self.triggerHistBox.setValue(0.1)
+    self.grid.addWidget(self.triggerHistBox, 1, 5)
+
     self.nWavesBox = QDoubleSpinBox()
     self.nWavesBox.setMinimum(2)
     self.nWavesBox.setMaximum(5)
     self.nWavesBox.setValue(2)
-    self.grid.addWidget(self.nWavesBox, 1, 5)
+    self.grid.addWidget(self.nWavesBox, 1, 6)
 
+    ipLabel = QLabel('Server IP :')
+    ipLabel.setMaximumWidth(60)
+    self.grid.addWidget(ipLabel, 9, 1)
 
-    """ Grid for average values """
-    tableSize = 2
-    self.summaryTable = QTableWidget(1, tableSize)
-    self.summaryTable.setMaximumHeight(60)
-    self.summaryTable.setHorizontalHeaderLabels([' Frequency ', ' Peak-Peak '])
-    self.summaryTable.setItem(0, 0, QTableWidgetItem())
-    self.summaryTable.setItem(0, 1, QTableWidgetItem())
-    self.summaryTable.verticalHeader().setVisible(False)
-    self.summaryTable.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.AdjustToContentsOnFirstShow)
-    self.summaryTable.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
-    for i in range(tableSize):
-      self.summaryTable.horizontalHeader().setSectionResizeMode(i, QtWidgets.QHeaderView.ResizeToContents)
-    self.grid.addWidget(self.summaryTable, 1, 1, 1, 2, alignment=QtCore.Qt.AlignLeft)
+    self.ipInput = QLineEdit(SERVER_IP)
+    self.ipInput.setSizePolicy(QtWidgets.QSizePolicy.Policy.Ignored, QtWidgets.QSizePolicy.Policy.Preferred)
+    self.ipInput.setMaxLength(16)
+    self.ipInput.setFixedSize(120, 30)
+    self.grid.addWidget(self.ipInput, 9, 2, alignment=QtCore.Qt.AlignLeft)
+
+    self.btConnect = QPushButton("Connect")
+    self.btConnect.setDefault(True)
+    self.btConnect.clicked.connect(self.onConnectClick)
+    self.btConnectPressed = False
+    self.grid.addWidget(self.btConnect, 9, 3, alignment=QtCore.Qt.AlignmentFlag.AlignLeft)
+
+    self.btSave = QPushButton("Save Screen Data")
+    self.btSave.setDefault(True)
+    self.btSave.clicked.connect(self.saveData)
+    self.grid.addWidget(self.btSave, 9, 5)
+
+    self.btPause = QPushButton("Pause")
+    self.btPause.setDefault(True)
+    self.btPause.clicked.connect(self.pauseClick)
+    self.paused = False
+    self.grid.addWidget(self.btPause, 9, 6)
 
     """ Stream Related """
     
     self.bufferLen = BUFFER_LEN
+    self.stream = None
 
-    self.receiver = None
-    self.timeRaw = None
-    self.vdd = None
-    self.signal = None
-    self.updateLock = None
-    
+    """ Trigger """
     self.triggerOn = True
 
     """ Graph Itens """
+
+    self.graphLayout = pg.GraphicsLayoutWidget()
+
+    """ Subplots """
+    self.mainGraph = self.graphLayout.addPlot(0, 0, rowspan=2, colspan=3)
+    self.graphFftPower = self.graphLayout.addPlot(0, 4)
+    self.graphFftPhase = self.graphLayout.addPlot(1, 4)
+    # self.graphLayout.addViewBox(row=0, col=0, colspan=2, rowspan=4)
+    self.mainGraph.addLegend()
+    
+    self.mainGraph.setMouseEnabled(x=False, y=False)
+    self.mainGraph.vb.setMouseMode(self.mainGraph.vb.RectMode)
+    self.graphFftPower.setMouseEnabled(x=False, y=False)
+    self.graphFftPower.vb.setMouseMode(self.mainGraph.vb.RectMode)
+    self.graphFftPhase.setMouseEnabled(x=False, y=False)
+    self.graphFftPhase.vb.setMouseMode(self.mainGraph.vb.RectMode)
+
+    
+    self.grid.addWidget(self.graphLayout, 2, 1, 7, 6)
 
     self.pressure = np.array([1] * self.bufferLen, dtype=np.float64)
     self.xAxis = np.linspace(0, self.bufferLen / SAMPLE_FREQUENCY * 1000, num=self.bufferLen)
@@ -138,7 +149,7 @@ class MainWindow(QWidget):
     self.dataLines = [
       pg.PlotDataItem(
         self.xAxis, self.pressure, name='Pressure', 
-        connect='all', pen=pg.mkPen(dict(color=self.linesColours[0], width=2)), 
+        connect='all', pen=pg.mkPen(dict(color=self.linesColours[0], width=1)), 
         antialias=False, autoDownsample=False
       ),
       pg.PlotDataItem(
@@ -149,10 +160,18 @@ class MainWindow(QWidget):
     ]
     
     for i in range(self.dataLines.__len__()):
-      self.graph.addItem(self.dataLines[i], name=f'Test{i}')
+      self.mainGraph.addItem(self.dataLines[i], name=f'Test{i}')
     
-    self.graph.setLabel('left', "<span style=\"font-size:14px\">Pressure [N/m²]</span>")
-    self.graph.setLabel('bottom', "<span style=\"font-size:14px\">Time [ms]</span>")
+    """ Add graphs labels """
+
+    self.mainGraph.setLabel('left', "<span style=\"font-size:14px\">Pressure [N/m²]</span>")
+    self.mainGraph.setLabel('bottom', "<span style=\"font-size:14px\">Time [ms]</span>")
+
+    self.graphFftPower.setLabel('left', "<span style=\"font-size:14px\">Power [N/m²]</span>")
+    self.graphFftPower.setLabel('bottom', "<span style=\"font-size:14px\">Frequency [Hz]</span>")
+
+    self.graphFftPhase.setLabel('left', "<span style=\"font-size:14px\">Phase [Degrees]</span>")
+    self.graphFftPhase.setLabel('bottom', "<span style=\"font-size:14px\">Frequency [Hz]</span>")
 
     """ Update data timer """
     self.timer = None
@@ -160,13 +179,14 @@ class MainWindow(QWidget):
   def setTrigger(self):
     if (self.triggerBox.checkState() == False):
       self.triggerValueBox.setDisabled(True)
+      self.triggerHistBox.setDisabled(True)
       self.nWavesBox.setDisabled(True)
     else:
       self.triggerValueBox.setDisabled(False)
       self.nWavesBox.setDisabled(False)
+      self.triggerHistBox.setDisabled(False)
 
-
-  """ Callback to be called from tcoClient on received data """
+  """ Callback to be called from tcpClient on received data """
   @synchronized(updateDataLock)
   def __onTcpData(self, data, dataLen):
     scaledData = data * CONVERSION_CONSTANT
@@ -174,7 +194,7 @@ class MainWindow(QWidget):
     self.pressure[-dataLen:] = scaledData
 
   def connectTcp(self):
-    ipAddr = self.ipsDropdown.itemText(self.ipsDropdown.currentIndex())
+    ipAddr = self.ipInput.text()
     print(ipAddr)
     try:
       self.stream = TcpClient(ipAddr, 'h', self.__onTcpData, port=3333)
@@ -191,10 +211,6 @@ class MainWindow(QWidget):
     self.timer.timeout.connect(self.updateData)
     self.timer.start()
     return True
-
-  def updatePorts(self):
-    self.ipsDropdown.clear()
-    self.ipsDropdown.addItems(self.portList)
 
   def pauseClick(self):
     if self.paused == False:
@@ -228,7 +244,7 @@ class MainWindow(QWidget):
       self.dataLines[1].setData([], [])
       return
 
-    plotData, crossIndexes = findWave(self.pressure, int(self.nWavesBox.value()), self.triggerValueBox.value())
+    plotData, crossIndexes = findWave(self.pressure, int(self.nWavesBox.value()), self.triggerValueBox.value(), self.triggerHistBox.value())
     if plotData.size == 0:
       return
     xAxis = np.linspace(0, plotData.size / SAMPLE_FREQUENCY * 1000, num=plotData.size)
@@ -240,8 +256,8 @@ class MainWindow(QWidget):
     ppValue = plotData.max() - plotData.min()
 
 
-    self.summaryTable.item(0, 0).setText(f'{Float(freq):!.2h}Hz')
-    self.summaryTable.item(0, 1).setText(f'{Float(ppValue):!.2h}')
+    self.summaryTable.item(0, 0).setText(f'{Float(freq):!.2h}\tHz')
+    self.summaryTable.item(0, 1).setText(f'{Float(ppValue):!.2h}\tPressure [N/m²]')
 
 
   def closeEvent(self, a0: QtGui.QCloseEvent) -> None:

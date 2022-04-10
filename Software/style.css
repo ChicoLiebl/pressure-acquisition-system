@@ -48,15 +48,46 @@ QCheckBox::indicator {
 }
 
 QTableWidget {
-  /* padding: 10px 15px; */
-  font-size: 18px;
-  text-align: left;
+  padding: 0px 0px;
+  font-size: 15px;
+  text-align: center;
   text-decoration: none;
   outline: none;
   color: #fff;
   /* background-color: #4CAF50; */
   border: none;
-  border-radius: 1px;
+  border-radius: 0px;
+}
+
+QLineEdit {
+  padding: 0px 0px;
+  font-size: 15px;
+  text-align: center;
+  text-decoration: none;
+  outline: none;
+  color: #fff;
+  /* background-color: #4CAF50; */
+  border: none;
+  border-radius: 0px;
+}
+
+QTableView::item {
+  text-align: center;
+  /* background-color: #4CAF50; */
+
+}
+
+QTableWidget::section {
+  text-align: center;
+  height: 100px;
+}
+
+QHeaderView {
+  color: #fff;
+}
+
+QHeaderView::section {
+  height: 20px;
 }
 
 QDoubleSpinBox {

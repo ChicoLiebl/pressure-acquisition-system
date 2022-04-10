@@ -14,9 +14,8 @@ def findCross(signal: np.ndarray, triggerLevel: float, hysteresis: float):
 
   return cross
 
-def findWave(signal: np.ndarray, nWaves: int, triggerLevel: float):
+def findWave(signal: np.ndarray, nWaves: int, triggerLevel: float, hysteresis: float):
   """ Finds trigger level crossing with hysteresis """
-  hysteresis = 0.1
 
   cross = findCross(signal, triggerLevel, hysteresis)
 

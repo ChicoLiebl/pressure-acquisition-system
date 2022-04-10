@@ -60,7 +60,8 @@ class TcpClient():
   def closeConnection(self):
     self.isRun = False
     self.socket.close()
-    self.socketThread.join()
+    if (self.socketThread != None):
+      self.socketThread.join()
 
   def __socketTask(self):
     totalLen = 0
