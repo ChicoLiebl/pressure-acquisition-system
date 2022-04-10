@@ -100,8 +100,9 @@ void wifi_init (wifi_callbacks_t *config) {
   esp_wifi_set_ps(WIFI_PS_MIN_MODEM);
 }
 
-esp_err_t wifi_start_and_scan () {  
+esp_err_t wifi_start_and_scan () { 
   if (!global_wifi_netif) global_wifi_netif = esp_netif_create_default_wifi_sta();
+  ESP_LOGI("NETWORK", "Wifi start");
   // start wifi, scan is done in scan_done_handler()
   esp_err_t err = esp_wifi_start();
   if (err == ESP_OK) wifi_running = true;

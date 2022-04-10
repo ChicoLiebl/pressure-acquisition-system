@@ -111,25 +111,6 @@ static void tcp_server_task () {
 
     vTaskSuspend(tcp_server_task_handle);
 
-  //   /* Send loop */
-  //   int64_t start_time, send_time;
-  //   broadcast_message_t msg;
-  //   while (1) {
-  //     if (xQueueReceive(tcp_server_queue, &msg, (TickType_t) 10)) {
-  //       start_time = esp_timer_get_time();
-  //       int written = send(tcp_socket, msg.data, msg.len, 0);
-  //       send_time = esp_timer_get_time() - start_time;
-  //       ESP_LOGW(TAG, "Sent %d bytes in %lld us, %.2f kB/s", 
-  //         msg.len, send_time, (float) (msg.len * 1000) / (float) send_time
-  //       );
-  //       free(msg.data);
-  //       if (written < 0) {
-  //         ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
-  //         break;
-  //       }
-  //     }
-  //   }
-
     client_connected = false;
   }
   close(listen_socket);
