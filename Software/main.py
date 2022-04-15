@@ -1,9 +1,9 @@
 from ctypes import alignment
 from decimal import ROUND_DOWN
-from re import S
 import sys
 import os
-import datetime
+import time
+from datetime import datetime as dt
 from threading import Lock
 
 import numpy as np
@@ -13,12 +13,17 @@ from PyQt5 import QtWidgets
 
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtGui import QColor
-from PyQt5.QtWidgets import QApplication, QGridLayout, QPushButton, QTableWidgetItem, QWidget, QMessageBox, QTableWidget, QCheckBox, QDoubleSpinBox, QLineEdit, QLabel
+from PyQt5.QtWidgets import \
+  QMainWindow, QApplication, QGridLayout, \
+  QPushButton, QTableWidgetItem, QWidget, \
+  QMessageBox, QTableWidget, QCheckBox, \
+  QDoubleSpinBox, QLineEdit, QLabel, QTabWidget
 import pyqtgraph as pg
 
 from prefixed import Float
 
 from tcpClient import TcpClient
+from config import ConfigTab
 from trigger import *
 from decorators import *
 
@@ -29,14 +34,37 @@ SAMPLE_FREQUENCY = 100e3
 BUFFER_LEN = 50000
 MAX_DISPLAY_LEN = 10000
 
-SERVER_IP = '192.168.0.169'
+SERVER_IP = '192.168.243.119'
 
 """ Update data Lock """
 updateDataLock = Lock()
+class App(QMainWindow):
 
-class MainWindow(QWidget):
+  def __init__(self):
+    super().__init__()
+    self.setWindowTitle('Pressure Acquisition System')
+    self.setGeometry(0, 0, 1280, 720)
+    
+    self.tab_widget = QTabWidget()
+    self.setCentralWidget(self.tab_widget)
+    self.configTab = ConfigTab()
+    self.plotTab = PlotTab()
+    self.tab_widget.addTab(self.configTab, 'Configuration')
+    self.tab_widget.addTab(self.plotTab, 'Acquisition')
+    
+    self.show()
+
+  def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
+    if self.plotTab.stream != None:
+      self.plotTab.stream.closeConnection()
+    self.configTab.bleClient.closeConnection()
+    while self.configTab.bleClient.deviceConnected == True:
+      time.sleep(0.1)
+    return super().closeEvent(a0)
+
+class PlotTab(QWidget):
   def __init__(self, *args, **kwargs):
-    super(MainWindow, self).__init__(*args, **kwargs)
+    super(PlotTab, self).__init__(*args, **kwargs)
     """ Configure colors """
     pg.setConfigOption('background', QColor(200, 200, 200))
     pg.setConfigOption('foreground', QColor(0, 0, 0))
@@ -51,7 +79,7 @@ class MainWindow(QWidget):
     self.linesColours = ['#DD6677', '#117733', '#88CCEE', '#999933', '#AA4499', '#44AA99', '#332288', '#DDCC77', '#882255']
 
     self.setLayout(self.grid)
-    self.setWindowTitle("Pressure Acquisition System")
+    # self.setWindowTitle("Pressure Acquisition System")
 
     """ Grid for average values """
     tableSize = 2
@@ -73,12 +101,14 @@ class MainWindow(QWidget):
 
     self.triggerValueBox = QDoubleSpinBox()
     self.triggerValueBox.setStepType(QtWidgets.QAbstractSpinBox.StepType.AdaptiveDecimalStepType)
-    self.triggerValueBox.setValue(1.6)
+    self.triggerValueBox.setValue(1.600)
+    self.triggerValueBox.setDecimals(3)
     self.grid.addWidget(self.triggerValueBox, 1, 4)
 
     self.triggerHistBox = QDoubleSpinBox()
     self.triggerHistBox.setStepType(QtWidgets.QAbstractSpinBox.StepType.AdaptiveDecimalStepType)
     self.triggerHistBox.setValue(0.1)
+    self.triggerHistBox.setDecimals(3)
     self.grid.addWidget(self.triggerHistBox, 1, 5)
 
     self.nWavesBox = QDoubleSpinBox()
@@ -88,7 +118,7 @@ class MainWindow(QWidget):
     self.grid.addWidget(self.nWavesBox, 1, 6)
 
     ipLabel = QLabel('Server IP :')
-    ipLabel.setMaximumWidth(60)
+    ipLabel.setMaximumWidth(120)
     self.grid.addWidget(ipLabel, 9, 1)
 
     self.ipInput = QLineEdit(SERVER_IP)
@@ -130,7 +160,7 @@ class MainWindow(QWidget):
     self.mainGraph = self.graphLayout.addPlot(0, 0, rowspan=2, colspan=3)
     self.graphFftPower = self.graphLayout.addPlot(0, 4)
     self.graphFftPhase = self.graphLayout.addPlot(1, 4)
-    # self.graphLayout.addViewBox(row=0, col=0, colspan=2, rowspan=4)
+    self.graphLayout.addViewBox(row=0, col=0, colspan=2, rowspan=4)
     self.mainGraph.addLegend()
     
     self.mainGraph.setMouseEnabled(x=False, y=False)
@@ -260,22 +290,19 @@ class MainWindow(QWidget):
     self.summaryTable.item(0, 1).setText(f'{Float(ppValue):!.2h}\tPressure [N/m²]')
 
 
-  def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
-    if self.stream != None:
-      self.stream.closeConnection()
-    return super().closeEvent(a0)
-
   def saveData(self):
     df = pd.DataFrame(self.dataLines[0].getData())
     df = df.transpose()
-    df.to_csv('test.csv')
+    timeStr = dt.now().strftime('%Y-%m-%d--%H-%M-%S')
+    df.to_csv(f'screen-data/{timeStr}.csv')
 
 def main():
   app = QApplication(sys.argv)
   os.environ["QT_ENABLE_HIGHDPI_SCALING"] = "1"
   QApplication.setHighDpiScaleFactorRoundingPolicy(QtCore.Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
-  window = MainWindow()
-  window.show()
+  ex = App()
+  # window = MainWindow()
+  # window.show()
 
   sys.exit(app.exec_())
 

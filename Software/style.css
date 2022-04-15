@@ -10,6 +10,18 @@ QPushButton {
   border-radius: 1px;
 }
   
+QLabel {
+  padding: 10px 15px;
+  font-size: 15px;
+  text-align: left;
+  /* text-decoration: none; */
+  /* outline: none; */
+  color: #fff;
+  /* background-color: #4CAF50; */
+  /* border: none; */
+  /* border-radius: 1px; */
+}
+
 QPushButton:hover {
   background-color: rgb(0, 119, 26);
 }
@@ -109,3 +121,15 @@ QDoubleSpinBox::up-button {
 QDoubleSpinBox::down-button {
   width: 40px;
 }
+
+/* QListWidget {
+  padding: 10px 15px;
+  font-size: 18px;
+  text-align: center;
+  text-decoration: none;
+  outline: none;
+  color: #fff;
+  background-color: #4CAF50;
+  border: none;
+  border-radius: 1px;
+} */
