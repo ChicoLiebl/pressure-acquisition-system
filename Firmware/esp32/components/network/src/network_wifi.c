@@ -19,6 +19,14 @@
 #define WIFI_LOG(format, ... )
 #endif
 
+static char def_ssid[] = "sensor_setup";
+static char def_pwd[] = "pascal";
+
+static wifi_net_t default_net = {
+  .ssid = def_ssid,
+  .password = def_pwd
+};
+
 static wifi_callbacks_t *global_wifi_callbacks = NULL;
 static esp_netif_t *global_wifi_netif = NULL;
 static bool wifi_running = false;
@@ -143,6 +151,12 @@ wifi_net_t* wifi_search_ssid (uint16_t scan_len, wifi_scan_item *scan_result, ui
       if (strcmp((char*) scan_result[s].ssid, config_list[c].ssid) == 0) {
         return &config_list[c];
       }
+    }
+  }
+
+  for (uint16_t s = 0; s < scan_len; s++) {
+    if (strcmp((char*) scan_result[s].ssid, default_net.ssid) == 0) {
+      return &default_net;
     }
   }
 

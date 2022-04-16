@@ -40,7 +40,7 @@ void configuration_add_wifi_network (WifiNetwork *net);
 /**
  * @brief add a wifi network to configuration
  */
-void configuration_remove_wifi_network (WifiNetwork *net);
+void configuration_remove_wifi_network (char *ssid);
 
 /**
  * @brief set sensor nickname in configuration

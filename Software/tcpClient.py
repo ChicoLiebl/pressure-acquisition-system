@@ -52,8 +52,13 @@ class TcpClient():
       self.socketThread.start()
       logging.info('Socket thread started')
       # Block till we start receiving values
+      tries = 0
       while self.isReceiving != True and self.isRun == True:
         time.sleep(0.1)
+        tries += 1
+        if tries > 10:
+          logging.error('TCP timeout on receive')
+          raise TimeoutError
       if not self.isRun:
         raise self.currException
   
@@ -86,6 +91,7 @@ class TcpClient():
         packet += rawData[:copyLen]
         unpacked = np.array(list(struct.iter_unpack(self.dataFormat, packet))).transpose()[0]
         unpackedLen = unpacked.size
+        logging.debug(f'Received {totalLen} bytes')
         self.onDataCb(unpacked, unpackedLen)
         
         totalLen -= self.maxPacketLen

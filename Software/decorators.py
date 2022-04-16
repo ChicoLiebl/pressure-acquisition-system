@@ -1,6 +1,3 @@
-
-
-
 def synchronized(lock):
   """ Synchronization decorator. """
 

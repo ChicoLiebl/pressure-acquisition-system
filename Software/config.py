@@ -1,22 +1,30 @@
-from PyQt5 import QtWidgets
 
-from PyQt5 import QtCore, QtGui
-from PyQt5.QtGui import QColor
+from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import \
   QApplication, QGridLayout, QVBoxLayout, QHBoxLayout, \
   QPushButton, QListWidgetItem, QWidget, \
   QMessageBox, QTableWidget, QCheckBox, \
   QDoubleSpinBox, QLineEdit, QLabel, QTabWidget, QScrollArea
 
-from bleManager import BLEManager
+from bleManager import BLECLient
 
-def clearLayout(layout):
+def clearLayoutWidgets(layout):
   while layout.count():
     child = layout.takeAt(0)
     if child.widget():
       child.widget().deleteLater()
 
+def clearLayouts(layout):
+  while layout.count():
+    child = layout.takeAt(0)
+    if child.layout():
+      clearLayoutWidgets(child.layout())
+      child.layout().deleteLater()
+
 class ConfigTab(QWidget):
+  updateIpSignal = pyqtSignal(str)
+
   def __init__(self, *args, **kwargs):
     super(ConfigTab, self).__init__(*args, **kwargs)  
     style = open('style.css').read()
@@ -28,7 +36,6 @@ class ConfigTab(QWidget):
     self.btScan.setDefault(True)
     self.btScan.clicked.connect(self.listDevices)
     self.grid.addWidget(self.btScan, 1, 1)
-
 
     """ device List """
     self.grid.addWidget(QLabel("Device List"), 2, 1, alignment=QtCore.Qt.AlignmentFlag.AlignCenter)
@@ -56,8 +63,9 @@ class ConfigTab(QWidget):
 
     self.btSetNick = QPushButton("Set")
     self.btSetNick.setDefault(True)
-    # self.btSetNick.
+    self.btSetNick.clicked.connect(self.setSensorNickname)
     self.grid.addWidget(self.btSetNick, 2, 4, 1, 1)
+
 
     """ Wifi list """
 
@@ -90,39 +98,91 @@ class ConfigTab(QWidget):
 
     self.btAddNet = QPushButton("Add")
     self.btAddNet.setDefault(True)
-    # self.btAddNet.clicked.connect(self.listDevices)
+    self.btAddNet.clicked.connect(self.addWifi)
     self.grid.addWidget(self.btAddNet, 5, 6, 1, 1)
 
-
-    self.bleClient = BLEManager()
-    self.bleClient.listUpdateSignal.connect(self.updateDeviceList)
+    self.bleClient = BLECLient()
+    self.bleClient.scanDoneSignal.connect(self.updateDeviceList)
     self.bleClient.bleConnectedSignal.connect(self.onBleConnect)
+    self.bleClient.bleDisconnectedSignal.connect(self.onBleDisconnect)
+    self.bleClient.bleConfigUpdatedSignal.connect(self.onConfigUpdate)
+    self.bleClient.bleFailedSignal.connect(self.bleRetryConnect)
 
-    self.updateDeviceList([('PAS:PressureSensor', '24:0A:C4:61:92:16')])
+    """ Reset Button """
+    self.btReset = QPushButton("Reset Sensor")
+    self.btReset.setDisabled(True)
+    self.btReset.clicked.connect(self.bleClient.resetSensor)
+    self.grid.addWidget(self.btReset, 2, 6, 1, 1)
+
+    self.updateNetsList()
+    self.updateDeviceList([('PAS:default', '24:0A:C4:61:92:16')])
+    # self.listDevices()
+
+  def bleRetryConnect(self):
+    mbox = QMessageBox()
+    mbox.setIcon(QMessageBox.Critical)
+    mbox.setWindowTitle("Error")
+    mbox.setText('BLE connection failed')
+    btRetry = mbox.addButton('Retry', QMessageBox.YesRole)
+    # btRetry.clicked.disconnect()
+    btRetry.clicked.connect(self.bleClient.connectRetry)
+    mbox.addButton(QMessageBox.Cancel)
+    mbox.exec_()
+
+    # self.bleClient.connectToDevice(addr)
+
+  def addWifi(self):
+    self.bleClient.addWifiNet(self.ssidText.text(), self.pwdText.text())
+    self.ssidText.setText("")
+    self.pwdText.setText("")
+  
+  def setSensorNickname(self):
+    self.bleClient.setNickname(self.nickText.text())
+
+  def onConfigUpdate(self):
+    self.nickText.setText(self.bleClient.deviceConfiguration.nickName)
     self.updateNetsList()
 
-  
   def updateNetsList(self):
-    # For test
-    ssids = ['CLARO_2GDFA429', 'tracktum', 'SchoeffelLiebl']
-    passwords = ['B8DFA429', 'dispositivosseguros', '30041988']
+    conf = self.bleClient.deviceConfiguration
+    ssids = [n.ssid for n in conf.networks]
+    passwords = [n.password for n in conf.networks]
+    
+    clearLayouts(self.netsList)
     for i in range(len(ssids)):
       hBox = QHBoxLayout()
       hBox.addWidget(QLabel(f'SSID: {ssids[i]}'))
       hBox.addWidget(QLabel(f'Password: {passwords[i]}'))
-      hBox.addWidget(QPushButton("Remove"))
+      btRm = QPushButton("Remove")
+      btRm.clicked.connect(lambda state, s=ssids[i], p=passwords[i]: self.onRemoveNet(s, p))
+      hBox.addWidget(btRm)
       self.netsList.addLayout(hBox)
 
+  def onRemoveNet(self, ssid, password):
+    self.bleClient.removeWifiNet(ssid, password)
+
   def onBleConnect(self, status):
-    self.statusLabel.setText("BLE: Connected")
+    ip = status[0].decode()
+    self.statusLabel.setText(f'BLE: Connected\tTCP Server IP: {ip}')
+    self.updateIpSignal.emit(ip)
     self.btScan.setText('Disconnect')
-    clearLayout(self.devList)
+    clearLayoutWidgets(self.devList)
+    self.ssidText.setDisabled(False)
+    self.pwdText.setDisabled(False)
+    self.btReset.setDisabled(False)
+    self.nickText.setDisabled(False)
+
     print(status)
+    self.bleClient.readConfiguration()
 
   def onBleDisconnect(self):
+    self.btReset.setDisabled(True)
+    self.ssidText.setDisabled(True)
+    self.pwdText.setDisabled(True)
+    self.nickText.setDisabled(True)
+
     self.btScan.setText('Scan Devices')
     self.statusLabel.setText("BLE: Disconnected")
-
 
   def onSelectDevice(self, device, bt):
     for i in range(self.devList.count()):
@@ -135,7 +195,7 @@ class ConfigTab(QWidget):
     self.bleClient.connectToDevice(device[1])
 
   def updateDeviceList(self, devices):
-    clearLayout(self.devList)
+    clearLayoutWidgets(self.devList)
     for i, d in enumerate(devices):
       b = QPushButton(d[0] + '\nMAC:' + d[1])
       

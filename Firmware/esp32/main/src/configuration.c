@@ -10,30 +10,15 @@
 
 /* Default net for emergency cases */
 
-// static char def_ssid[] = "sensor_setup";
-// static char def_pwd[] = "pascal";
-
-const char def_ssid[] = "CLARO_2GDFA429";
-const char def_pwd[] = "B8DFA429";
-
-// const char def_ssid[] = "tracktum-setup";
-// const char def_pwd[] = "tracktum-1234";
-
-// const char def_ssid[] = "tracktum";
-// const char def_pwd[] = "dispositivosseguros";
-
-// const char def_ssid[] = "SchoeffelLiebl";
-// const char def_pwd[] = "30041988";
-
-static WifiNetwork default_net = {
-  .base = PROTOBUF_C_MESSAGE_INIT(&wifi_network__descriptor),
-  .ssid = def_ssid,
-  .password = def_pwd
-};
+// static WifiNetwork default_net = {
+//   .base = PROTOBUF_C_MESSAGE_INIT(&wifi_network__descriptor),
+//   .ssid = def_ssid,
+//   .password = def_pwd
+// };
 
 static WifiNetwork* networks[10] = {};
 
-static char default_nick[] = "PressureSensor";
+static char default_nick[] = "default";
 
 static Configuration default_config = {
   .base = PROTOBUF_C_MESSAGE_INIT(&configuration__descriptor),
@@ -68,9 +53,7 @@ void configuration_init () {
   Configuration *read_conf = configuration_load_from_flash();
   if (read_conf == NULL) {
     ESP_LOGI(TAG, "No configuration file found");
-    networks[0] = &default_net;
-    global_config = default_config;
-    global_config.n_networks = 1;
+    memcpy(&global_config, &default_config, sizeof(Configuration));
     ESP_LOGI(TAG, "Saving default configuration to flash");
     configuration_save_to_flash(&global_config);
   } else {
@@ -177,16 +160,14 @@ void configuration_add_wifi_network (WifiNetwork *net) {
   configuration_save_to_flash(&global_config);
 }
 
-void configuration_remove_wifi_network (WifiNetwork *net) {
-  int index = 0;
-  bool same_net = false;
+void configuration_remove_wifi_network (char *ssid) {
   /* Search for network */
   for (int i = 0; i < global_config.n_networks; i++) {
-    if (strcmp(net->ssid, global_config.networks[i]->ssid) == 0) {
+    if (strcmp(ssid, global_config.networks[i]->ssid) == 0) {
       /* Free net */
-      free(global_config.networks[9]->ssid);
-      free(global_config.networks[9]->password);
-      free(global_config.networks[9]);
+      free(global_config.networks[i]->ssid);
+      free(global_config.networks[i]->password);
+      free(global_config.networks[i]);
       if (i != (global_config.n_networks - 1)){
         memmove(global_config.networks + i, global_config.networks + (i + 1), sizeof(WifiNetwork*) * (global_config.n_networks - (i + 1)));
       }

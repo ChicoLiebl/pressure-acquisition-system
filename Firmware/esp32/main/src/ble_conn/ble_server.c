@@ -76,6 +76,72 @@ static int read_net_status_cb (uint16_t conn_handle, uint16_t attr_handle, struc
   return os_mbuf_append(ctxt->om, (uint8_t*) &net_status, 1);
 }
 
+static void notify_ack (bool ack) {
+  static uint8_t payload[128];
+  static BleCommand cmd = {
+    .base = PROTOBUF_C_MESSAGE_INIT(&ble_command__descriptor),
+    .command = BLE_COMMANDS__ACK,
+    .nickname = NULL,
+    .nwt = NULL,
+  };
+  size_t len = ble_command__get_packed_size(&cmd);
+  printf("ble_command size %d\n", len);
+  len = ble_command__pack(&cmd, payload);
+
+  cmd.command = (ack)? BLE_COMMANDS__ACK : BLE_COMMANDS__NACK;
+
+  struct os_mbuf *om = ble_hs_mbuf_from_flat(payload, len);
+  ble_gattc_notify_custom(conn_handle, command_handle, om);
+}
+
+static int write_command_cb (uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg) {
+  size_t len = ctxt->om->om_len;
+  uint8_t *data = ctxt->om->om_data;
+  BleCommand *cmd = ble_command__unpack(NULL, len, data);
+  ESP_LOGI("BLE", "Received command %s", protobuf_c_enum_descriptor_get_value(&ble_commands__descriptor, cmd->command)->c_name);
+  switch (cmd->command) {
+    case BLE_COMMANDS__RESTART: {
+      esp_timer_create_args_t reset_timer_args = {
+        .callback = esp_restart,
+        .arg = NULL,
+        .dispatch_method = ESP_TIMER_TASK,
+        .name = "Restart Timer"
+      };
+      esp_timer_handle_t reset_timer;
+      ESP_ERROR_CHECK(esp_timer_create(&reset_timer_args, &reset_timer));
+      ESP_ERROR_CHECK(esp_timer_start_once(reset_timer, 1 * 1000000));
+    }
+    case BLE_COMMANDS__EREASE_WIFI_LIST: {
+      
+      notify_ack(true);
+      break;
+    }
+    case BLE_COMMANDS__ADD_WIFI: {
+      printf("New wifi SSID: %s, Password: %s\n", cmd->nwt->ssid, cmd->nwt->password);
+      configuration_add_wifi_network(cmd->nwt);
+      notify_ack(true);
+      break;
+    }
+    case BLE_COMMANDS__REMOVE_WIFI: {
+      printf("Removing wifi SSID: %s\n", cmd->nwt->ssid);
+      configuration_remove_wifi_network(cmd->nwt->ssid);
+      notify_ack(true);
+      break;
+    }
+    case BLE_COMMANDS__SET_NICK: {
+      printf("Set nick: %s", cmd->nickname);
+      configuration_set_nickname(cmd->nickname);
+      notify_ack(true);
+      break;
+    }
+    default: {
+      notify_ack(false);
+      break;
+    }
+  }
+  return 0;
+}
+
 static int read_configuration_cb (uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg) {
   Configuration* curr_conf = configuration_get_current();
   size_t len = configuration__get_packed_size(curr_conf);
@@ -117,7 +183,7 @@ static const struct ble_gatt_svc_def gatt_svr_svcs[] = {
       },
       {
         .uuid = &command_id.u,
-        .access_cb = do_nothing_gatt_cb,
+        .access_cb = write_command_cb,
         .flags = BLE_GATT_WRITE_PERM | BLE_GATT_CHR_F_INDICATE,
       },
       { 0 }
@@ -394,7 +460,13 @@ void ble_server_start () {
   ble_svc_gap_init();
   ble_svc_gatt_init();
 
-  char device_name[] = "TEST-TCC";
+  Configuration *curr_conf = configuration_get_current();
+  char device_name[64] = "PAS:";
+  strcat(device_name, curr_conf->nickname);
+  printf("Device Name: %s\n", device_name);
+  if (strlen(device_name) > 30) {
+    device_name[30] = '\0';
+  }
   ESP_ERROR_CHECK(ble_svc_gap_device_name_set(device_name));
 
   ESP_ERROR_CHECK(ble_gatts_count_cfg(gatt_svr_svcs));

@@ -1,0 +1,1 @@
+protoc -I=../protobuf/ --python_out=protobuf --proto_path=../protobuf ../protobuf/*.proto

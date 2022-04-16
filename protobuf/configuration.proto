@@ -1,28 +1,27 @@
 syntax = "proto2";
 
-enum ble_commands {
+enum bleCommands {
   ACK = 0;
   NACK = 1;
   RESTART = 2;
   EREASE_WIFI_LIST = 3;
   ADD_WIFI = 4;
   REMOVE_WIFI = 5;
-  SERVER_IP = 6;
+  SET_NICK = 6;
 }
 
-message wifi_network {
+message wifiNetwork {
   required string ssid = 1;
   optional string password = 2;
 }
 
 message configuration {
   optional string nickName = 1;
-  repeated wifi_network networks = 2;
+  repeated wifiNetwork networks = 2;
 }
 
-message ble_command  {
-  required ble_commands command = 1;
-  optional wifi_network nwt = 2;
+message bleCommand  {
+  required bleCommands command = 1;
+  optional wifiNetwork nwt = 2;
   optional string nickName = 3;
-  optional string serverIp = 4;
 }
