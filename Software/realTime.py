@@ -31,7 +31,7 @@ SAMPLE_FREQUENCY = 100e3
 BUFFER_LEN = 50000
 MAX_DISPLAY_LEN = 10000
 
-DEFAULT_SERVER_IP = '192.168.243.119'
+DEFAULT_SERVER_IP = '192.168.0.100'
 
 SCREEN_DATA_PATH = 'screen-data'
 RECORDING_PATH = 'rec'
@@ -84,13 +84,13 @@ class PlotTab(QWidget):
 
     self.triggerValueBox = QDoubleSpinBox()
     self.triggerValueBox.setStepType(QtWidgets.QAbstractSpinBox.StepType.AdaptiveDecimalStepType)
-    self.triggerValueBox.setValue(1.600)
+    self.triggerValueBox.setValue(2.5)
     self.triggerValueBox.setDecimals(3)
     self.grid.addWidget(self.triggerValueBox, 1, 4)
 
     self.triggerHistBox = QDoubleSpinBox()
     self.triggerHistBox.setStepType(QtWidgets.QAbstractSpinBox.StepType.AdaptiveDecimalStepType)
-    self.triggerHistBox.setValue(0.1)
+    self.triggerHistBox.setValue(0.2)
     self.triggerHistBox.setDecimals(3)
     self.grid.addWidget(self.triggerHistBox, 1, 5)
 
@@ -109,6 +109,11 @@ class PlotTab(QWidget):
     self.btConnect.clicked.connect(self.onConnectClick)
     self.btConnectPressed = False
     self.grid.addWidget(self.btConnect, 9, 2, alignment=QtCore.Qt.AlignmentFlag.AlignLeft)
+
+    self.btResetView = QPushButton("Reset Zoom")
+    self.btResetView.setDefault(True)
+    self.btResetView.clicked.connect(self.resetView)
+    self.grid.addWidget(self.btResetView, 9, 3)
 
     self.btRecord = QPushButton("Start Recording")
     self.btRecord.clicked.connect(self.startRecording)
@@ -153,6 +158,7 @@ class PlotTab(QWidget):
     
     self.mainGraph.setMouseEnabled(x=False, y=False)
     self.mainGraph.vb.setMouseMode(self.mainGraph.vb.RectMode)
+    self.mainGraph.setYRange(-1, 6, padding=0)
     self.graphFftPower.setMouseEnabled(x=False, y=False)
     self.graphFftPower.vb.setMouseMode(self.mainGraph.vb.RectMode)
     self.graphFftPhase.setMouseEnabled(x=False, y=False)
@@ -208,6 +214,14 @@ class PlotTab(QWidget):
     """ Update data timer """
     self.timer = None
 
+    """ Manual Ip set """
+    self.serverIP = DEFAULT_SERVER_IP
+    self.ipLabel.setText(f'Server IP : {self.serverIP}')
+
+  def resetView(self):
+    self.mainGraph.setYRange(-1, 6, padding=0)
+
+
   def setTrigger(self):
     if (self.triggerBox.checkState() == False):
       self.triggerValueBox.setDisabled(True)
@@ -240,6 +254,8 @@ class PlotTab(QWidget):
   """ Callback to be called from tcpClient on received data """
   @synchronized(updateDataLock)
   def __onTcpData(self, data, dataLen):
+    if self.paused:
+      return
     scaledData = data * CONVERSION_CONSTANT
     self.pressure[:-dataLen] = self.pressure[dataLen:]
     self.pressure[-dataLen:] = scaledData

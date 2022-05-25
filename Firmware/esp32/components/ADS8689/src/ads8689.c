@@ -232,7 +232,6 @@ static void set_avg_sample_frequency (int64_t *read_time, size_t len, float *fs)
 
 
 size_t ads8689_read_buffer (int16_t *dest, size_t max_len, float *fs) {
-  // size_t available = xStreamBufferBytesAvailable(data_stream_buffer);
   size_t bytes_read = xStreamBufferReceive(data_stream_buffer, (void*) dest, max_len * sizeof(int16_t), 0);
   return bytes_read / sizeof(int16_t);
 }

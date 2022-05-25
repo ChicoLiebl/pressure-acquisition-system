@@ -75,24 +75,8 @@ static void nvs_init() {
   ESP_ERROR_CHECK(ret);
 }
 
-void throuput_test_task () {
-  #define TEST_LEN (512)
-
-  int16_t test_data[TEST_LEN];
-
-  for (int i = 0; i < TEST_LEN; i++) {
-    test_data[i] = i % INT16_MAX;
-  }
-  test_data[0] = 0;
-  while (1) {
-    test_data[0]++;
-    // send_tcp_packet((uint8_t*) test_data, TEST_LEN * sizeof(int16_t));
-    vTaskDelay(pdMS_TO_TICKS(100));
-  }
-}
-
-void integrit_test_task () {
-  #define TEST_LEN (200)
+void test_tcp_task () {
+  #define TEST_LEN (1024)
   int16_t test_data[TEST_LEN];
 
   float fs = 100e3;
@@ -103,8 +87,6 @@ void integrit_test_task () {
   float ph = 0;
   float fr  = 2 * M_PI * fbin;
 
-
-  // int counter = 0;
   while (1) {
     for (int i = 0; i < TEST_LEN; i++) {
       test_data[i] = (int16_t) (INT16_MAX * sin(ph));
@@ -115,6 +97,8 @@ void integrit_test_task () {
   }
 }
 
+#define SEND_BUFFER_LEN (512)
+#define CIRCULAR_BUFFER_LEN (SEND_BUFFER_LEN * 16)
 
 static bool setup_done = false;
 
@@ -135,38 +119,51 @@ void adc_setup_task () {
   
   ads8689_transmit(ADS8689_WRITE_LS, ADS8689_SDO_CTL_REG, 0x3 << 8, NULL, 0);
 
-
-  ads8689_start_stream(8 * 1024, 100000);
+  ads8689_start_stream(CIRCULAR_BUFFER_LEN, 100000);
   setup_done = true;
   vTaskDelete(NULL);
 }
 
-#define BUFFER_LEN 2048
-
-
 void adc_read_task () {
-  int16_t buffer[BUFFER_LEN];
+  int16_t buffer[SEND_BUFFER_LEN];
   float fs;
-
+  int64_t counter = 0, countFail = 0;
   while (1) {
-    size_t read_len = ads8689_read_buffer(buffer, BUFFER_LEN, &fs);
-
-    // for (int i = 0; i < read_len; i++) {
-    //   printf("%d%c", buffer[i], ((i + 1) % 10 == 0)? '\n':' ');
+    size_t read_len = ads8689_read_buffer(buffer, SEND_BUFFER_LEN, &fs);
+    // if (read_len == 0) {
+    //   // vTaskDelay(1);
+    //   continue;
     // }
-    // printf("\n");
-
-    tcp_server_send_sync((uint8_t*) buffer, read_len * sizeof(uint16_t));
-    // printf("read len: %d, sample rate: %.2f kHz\n", read_len, fs / 1000);
-    vTaskDelay(10);
-    // vTaskDelay(pdMS_TO_TICKS(10));
+    if (!tcp_server_send_sync((uint8_t*) buffer, read_len * sizeof(uint16_t))) {
+      vTaskDelay(10);
+      // vTaskDelay(pdMS_TO_TICKS(10));
+    } else {
+      // vTaskDelay(1);
+      if (read_len == SEND_BUFFER_LEN) {
+        countFail++;
+      }
+      counter++;
+    }
+    if (counter == 1000) {
+      printf("[%f]\tread len: %d\n", 100.f * (float) countFail / (float) counter , read_len);
+      counter = 0;
+      countFail = 0;
+    }
   }
+}
+
+void on_tcp_connection () {
+  ble_server_stop();
 }
 
 void app_main (void) {
   nvs_init();
 
   configuration_init();
+
+  /* Setup reset GPIO */
+  gpio_set_direction(GPIO_NUM_26, GPIO_MODE_OUTPUT);
+  gpio_set_level(GPIO_NUM_26, 1);
 
   ble_server_start();
 
@@ -177,12 +174,12 @@ void app_main (void) {
     vTaskDelay(pdMS_TO_TICKS(1000));
     ESP_LOGI("WIFI", "Waiting connection");
   }
-  tcp_server_init();
+  tcp_server_init(on_tcp_connection);
+  
+  // xTaskCreatePinnedToCore(test_tcp_task, "Test Task", 8192, NULL, 10, NULL, 1);
 
-  // xTaskCreatePinnedToCore(integrit_test_task, "Integrit Test", 8192, NULL, 10, NULL, 1);
-  // xTaskCreatePinnedToCore(throuput_test_task, "Throughput Test", 8192, NULL, 10, NULL, 1);
-
-  // xTaskCreatePinnedToCore(adc_setup_task, "ADC setup", 32 * 1024, NULL, 10, NULL, 1);
-  // while(!setup_done);
-  // xTaskCreatePinnedToCore(adc_read_task, "ADC read", 32 * 1024, NULL, 10, NULL, 0);
+  xTaskCreatePinnedToCore(adc_setup_task, "ADC setup", 32 * 1024, NULL, 10, NULL, 1);
+  while(!setup_done);
+  xTaskCreatePinnedToCore(adc_read_task, "ADC read", 16 * 1024, NULL, 10, NULL, 0);
+  printf("Main done!\n");
 }

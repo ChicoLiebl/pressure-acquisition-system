@@ -1,19 +1,12 @@
-#ifndef TRACKTUM_BLE_SERVER_H
-#define TRACKTUM_BLE_SERVER_H
+#ifndef BLE_SERVER_H
+#define BLE_SERVER_H
 
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
 
-#define BLE_SERVER_ENC 0
-
-#if BLE_SERVER_ENC
-	#define BLE_GATT_READ_PERM BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_READ_ENC
-	#define BLE_GATT_WRITE_PERM BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_WRITE_ENC
-#else
-	#define BLE_GATT_READ_PERM BLE_GATT_CHR_F_READ
-	#define BLE_GATT_WRITE_PERM BLE_GATT_CHR_F_WRITE
-#endif
+#define BLE_GATT_READ_PERM BLE_GATT_CHR_F_READ
+#define BLE_GATT_WRITE_PERM BLE_GATT_CHR_F_WRITE
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,4 +21,4 @@ void ble_server_notify_net_status (bool value);
 }
 #endif
 
-#endif // TRACKTUM_BLE_SERVER_H
+#endif // BLE_SERVER_H

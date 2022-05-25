@@ -9,7 +9,6 @@ import pydbus
 import os
 
 import protobuf.configuration_pb2 as proto
-from google.protobuf.json_format import MessageToJson
 
 IP_UUID = "f3641001-00b0-4240-ba50-05ca45bf8abc"
 STATUS_UUID = "f3641010-00b0-4240-ba50-05ca45bf8abc"

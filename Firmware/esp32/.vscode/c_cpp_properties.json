@@ -25,7 +25,8 @@
                 "CONFIG_MBEDTLS_TLS_ENABLED=1",
                 "SNTP_SERVER_DNS=1",
                 "_DEFAULT_SOURCE"
-            ]
+            ],
+            "configurationProvider": "ms-vscode.cmake-tools"
         }
     ],
     "version": 4

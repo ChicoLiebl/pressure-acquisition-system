@@ -115,8 +115,8 @@ class ConfigTab(QWidget):
     self.grid.addWidget(self.btReset, 2, 6, 1, 1)
 
     self.updateNetsList()
-    self.updateDeviceList([('PAS:default', '24:0A:C4:61:92:16')])
-    # self.listDevices()
+    # self.updateDeviceList([('PAS:default', '24:0A:C4:61:92:16')])
+    self.listDevices()
 
   def bleRetryConnect(self):
     mbox = QMessageBox()

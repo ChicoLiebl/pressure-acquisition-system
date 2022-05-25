@@ -56,6 +56,8 @@ static void clean_up (int socket) {
 
 static int tcp_socket;
 
+static void_callback connect_cb = NULL;
+
 static void tcp_server_task () {
   char rx_buffer[128];
   char addr_str[128];
@@ -108,6 +110,7 @@ static void tcp_server_task () {
 
     ESP_LOGI(TAG, "Broadcast started");
     client_connected = true;
+    if (connect_cb != NULL) connect_cb();
 
     vTaskSuspend(tcp_server_task_handle);
 
@@ -117,19 +120,22 @@ static void tcp_server_task () {
   vTaskDelete(NULL);
 }
 
-void tcp_server_init () {
+void tcp_server_init (void_callback on_connect_cb) {
+  connect_cb = on_connect_cb;
   tcp_server_queue = xQueueCreate(10, sizeof(broadcast_message_t));
   xTaskCreatePinnedToCore(tcp_server_task, "tcp_server", 4096, NULL, 5, &tcp_server_task_handle, 0);
 }
 
-void tcp_server_send_sync (uint8_t *data, size_t len) {
-  if (!client_connected) return;
+bool tcp_server_send_sync (uint8_t *data, size_t len) {
+  if (!client_connected) return false;
   
   int sent = send(tcp_socket, data, len, 0);
   if (sent < 0) {
     ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
     vTaskResume(tcp_server_task_handle);
+    return false;
   }
+  return true;
 }
 
 void send_tcp_packet (uint8_t *data, size_t len) {

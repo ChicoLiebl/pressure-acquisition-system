@@ -7,8 +7,6 @@ import logging
 
 from threading import Thread
 
-from numpy.core.multiarray import array
-
 class TcpClient():
   def __init__(
       self, address: str, dataFormat: str, onDataCb, 
@@ -54,7 +52,7 @@ class TcpClient():
       # Block till we start receiving values
       tries = 0
       while self.isReceiving != True and self.isRun == True:
-        time.sleep(0.1)
+        time.sleep(1)
         tries += 1
         if tries > 10:
           logging.error('TCP timeout on receive')
@@ -108,18 +106,21 @@ class TcpClient():
 PORT = 3333
 # -------------------------------
 
+def onData(data, dataLen):
+  print(dataLen)
+
 """ TODO: Update example """
 if __name__ == '__main__':
   if not(sys.argv[2:]):
     print('Usage: example_test.py <server_address> <message_to_send_to_server>')
     exit(0)
-  
+
   data = np.array([0] * 4096)
   # print(data)
 
   addr = sys.argv[1]
   msg = sys.argv[2]
-  tcpStream = TcpClient(addr, data, 'H', port=PORT)
+  tcpStream = TcpClient(addr, 'h', onDataCb=onData, port=PORT)
 
   tcpStream.connect(msg)
 
