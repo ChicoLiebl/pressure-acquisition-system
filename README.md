@@ -1,2 +1,3 @@
 # pressure-acquisition-system
-Pressure acquisition system for a piezoelectric sensor
+
+Acquisition system for a piezoelectric pressure sensor, model 601A from Kistler. This system was developed as my electrical engineering graduation project.
